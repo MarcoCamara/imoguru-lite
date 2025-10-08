@@ -1,0 +1,360 @@
+import { useEffect, useState } from 'react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Upload, Trash2, Star, StarOff } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+
+interface MediaFormProps {
+  propertyId?: string;
+}
+
+export default function MediaForm({ propertyId }: MediaFormProps) {
+  const { toast } = useToast();
+  const [images, setImages] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (propertyId) {
+      loadMedia();
+    } else {
+      setLoading(false);
+    }
+  }, [propertyId]);
+
+  const loadMedia = async () => {
+    try {
+      const [imagesRes, videosRes] = await Promise.all([
+        supabase
+          .from('property_images')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('display_order'),
+        supabase
+          .from('property_videos')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('created_at'),
+      ]);
+
+      if (imagesRes.error) throw imagesRes.error;
+      if (videosRes.error) throw videosRes.error;
+
+      setImages(imagesRes.data || []);
+      setVideos(videosRes.data || []);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar mídia',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!propertyId) {
+      toast({
+        title: 'Salve o imóvel primeiro',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${propertyId}/${Math.random()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('property_images').insert([
+          {
+            property_id: propertyId,
+            url: publicUrl,
+            display_order: images.length,
+            is_cover: images.length === 0,
+          },
+        ]);
+
+        if (dbError) throw dbError;
+      }
+
+      toast({
+        title: 'Imagens enviadas!',
+      });
+
+      loadMedia();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao enviar imagens',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!propertyId) {
+      toast({
+        title: 'Salve o imóvel primeiro',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${propertyId}/${Math.random()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-videos')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-videos')
+          .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('property_videos').insert([
+          {
+            property_id: propertyId,
+            url: publicUrl,
+            title: file.name,
+          },
+        ]);
+
+        if (dbError) throw dbError;
+      }
+
+      toast({
+        title: 'Vídeos enviados!',
+      });
+
+      loadMedia();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao enviar vídeos',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const toggleCoverImage = async (imageId: string) => {
+    try {
+      await supabase
+        .from('property_images')
+        .update({ is_cover: false })
+        .eq('property_id', propertyId);
+
+      await supabase
+        .from('property_images')
+        .update({ is_cover: true })
+        .eq('id', imageId);
+
+      toast({
+        title: 'Imagem de capa atualizada!',
+      });
+
+      loadMedia();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const deleteImage = async (imageId: string, url: string) => {
+    try {
+      const path = url.split('/property-images/')[1];
+      await supabase.storage.from('property-images').remove([path]);
+      await supabase.from('property_images').delete().eq('id', imageId);
+
+      toast({
+        title: 'Imagem removida!',
+      });
+
+      loadMedia();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao remover',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const deleteVideo = async (videoId: string, url: string) => {
+    try {
+      const path = url.split('/property-videos/')[1];
+      await supabase.storage.from('property-videos').remove([path]);
+      await supabase.from('property_videos').delete().eq('id', videoId);
+
+      toast({
+        title: 'Vídeo removido!',
+      });
+
+      loadMedia();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao remover',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (!propertyId) {
+    return (
+      <div className="pt-4 text-center text-muted-foreground">
+        Salve o imóvel primeiro para fazer upload de imagens e vídeos.
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 pt-4">
+      <div>
+        <Label>Imagens</Label>
+        <div className="mt-2">
+          <Input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            disabled={uploading}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          {images.map((image) => (
+            <Card key={image.id} className="relative overflow-hidden">
+              <img
+                src={image.url}
+                alt="Property"
+                className="w-full h-32 object-cover"
+              />
+              <CardContent className="p-2 flex justify-between">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleCoverImage(image.id)}
+                >
+                  {image.is_cover ? (
+                    <Star className="h-4 w-4 fill-current" />
+                  ) : (
+                    <StarOff className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteImage(image.id, image.url)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {images.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            Nenhuma imagem enviada ainda.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label>Vídeos</Label>
+        <div className="mt-2">
+          <Input
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={handleVideoUpload}
+            disabled={uploading}
+          />
+        </div>
+
+        <div className="space-y-2 mt-4">
+          {videos.map((video) => (
+            <Card key={video.id}>
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <p className="font-medium">{video.title}</p>
+                  <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Ver vídeo
+                  </a>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteVideo(video.id, video.url)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {videos.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            Nenhum vídeo enviado ainda.
+          </p>
+        )}
+      </div>
+
+      {uploading && (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Enviando arquivos...</span>
+        </div>
+      )}
+    </div>
+  );
+}
