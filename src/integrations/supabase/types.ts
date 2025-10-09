@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      authorization_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       nearby_points: {
         Row: {
           category: string | null
@@ -69,34 +96,74 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cep: string | null
+          city: string | null
+          complement: string | null
+          cpf_cnpj: string | null
           created_at: string | null
+          creci: string | null
           email: string | null
+          full_address: string | null
           full_name: string | null
           id: string
+          neighborhood: string | null
+          number: string | null
+          person_type: string | null
           phone: string | null
+          rg: string | null
+          state: string | null
+          street: string | null
           updated_at: string | null
+          user_type: string | null
         }
         Insert: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf_cnpj?: string | null
           created_at?: string | null
+          creci?: string | null
           email?: string | null
+          full_address?: string | null
           full_name?: string | null
           id: string
+          neighborhood?: string | null
+          number?: string | null
+          person_type?: string | null
           phone?: string | null
+          rg?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string | null
+          user_type?: string | null
         }
         Update: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf_cnpj?: string | null
           created_at?: string | null
+          creci?: string | null
           email?: string | null
+          full_address?: string | null
           full_name?: string | null
           id?: string
+          neighborhood?: string | null
+          number?: string | null
+          person_type?: string | null
           phone?: string | null
+          rg?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string | null
+          user_type?: string | null
         }
         Relationships: []
       }
       properties: {
         Row: {
           accepts_exchange: boolean | null
+          archived: boolean | null
           bathrooms: number | null
           bedrooms: number | null
           cep: string | null
@@ -111,6 +178,7 @@ export type Database = {
           condo_units: number | null
           construction_year: number | null
           country: string | null
+          covered_parking: number | null
           created_at: string | null
           description: string | null
           exact_cep: string | null
@@ -122,17 +190,34 @@ export type Database = {
           iptu_price: number | null
           latitude: number | null
           longitude: number | null
+          nearby_amenities: string[] | null
           neighborhood: string | null
           number: string | null
+          other_costs: Json | null
+          owner_cep: string | null
+          owner_city: string | null
+          owner_complement: string | null
           owner_cpf_cnpj: string | null
           owner_email: string | null
+          owner_marital_status:
+            | Database["public"]["Enums"]["marital_status"]
+            | null
           owner_name: string | null
+          owner_neighborhood: string | null
+          owner_number: string | null
           owner_phone: string | null
+          owner_rg: string | null
+          owner_state: string | null
+          owner_street: string | null
+          owner_type: Database["public"]["Enums"]["owner_type"] | null
+          owner_whatsapp: string | null
           parking_spaces: number | null
+          property_features: string[] | null
           property_type: Database["public"]["Enums"]["property_type"]
           published: boolean | null
           published_on_portal: boolean | null
           purpose: Database["public"]["Enums"]["property_purpose"]
+          registration_number: string | null
           rental_price: number | null
           sale_price: number | null
           state: string | null
@@ -141,12 +226,14 @@ export type Database = {
           suites: number | null
           title: string
           total_area: number | null
+          uncovered_parking: number | null
           updated_at: string | null
           useful_area: number | null
           user_id: string
         }
         Insert: {
           accepts_exchange?: boolean | null
+          archived?: boolean | null
           bathrooms?: number | null
           bedrooms?: number | null
           cep?: string | null
@@ -161,6 +248,7 @@ export type Database = {
           condo_units?: number | null
           construction_year?: number | null
           country?: string | null
+          covered_parking?: number | null
           created_at?: string | null
           description?: string | null
           exact_cep?: string | null
@@ -172,17 +260,34 @@ export type Database = {
           iptu_price?: number | null
           latitude?: number | null
           longitude?: number | null
+          nearby_amenities?: string[] | null
           neighborhood?: string | null
           number?: string | null
+          other_costs?: Json | null
+          owner_cep?: string | null
+          owner_city?: string | null
+          owner_complement?: string | null
           owner_cpf_cnpj?: string | null
           owner_email?: string | null
+          owner_marital_status?:
+            | Database["public"]["Enums"]["marital_status"]
+            | null
           owner_name?: string | null
+          owner_neighborhood?: string | null
+          owner_number?: string | null
           owner_phone?: string | null
+          owner_rg?: string | null
+          owner_state?: string | null
+          owner_street?: string | null
+          owner_type?: Database["public"]["Enums"]["owner_type"] | null
+          owner_whatsapp?: string | null
           parking_spaces?: number | null
+          property_features?: string[] | null
           property_type: Database["public"]["Enums"]["property_type"]
           published?: boolean | null
           published_on_portal?: boolean | null
           purpose: Database["public"]["Enums"]["property_purpose"]
+          registration_number?: string | null
           rental_price?: number | null
           sale_price?: number | null
           state?: string | null
@@ -191,12 +296,14 @@ export type Database = {
           suites?: number | null
           title: string
           total_area?: number | null
+          uncovered_parking?: number | null
           updated_at?: string | null
           useful_area?: number | null
           user_id: string
         }
         Update: {
           accepts_exchange?: boolean | null
+          archived?: boolean | null
           bathrooms?: number | null
           bedrooms?: number | null
           cep?: string | null
@@ -211,6 +318,7 @@ export type Database = {
           condo_units?: number | null
           construction_year?: number | null
           country?: string | null
+          covered_parking?: number | null
           created_at?: string | null
           description?: string | null
           exact_cep?: string | null
@@ -222,17 +330,34 @@ export type Database = {
           iptu_price?: number | null
           latitude?: number | null
           longitude?: number | null
+          nearby_amenities?: string[] | null
           neighborhood?: string | null
           number?: string | null
+          other_costs?: Json | null
+          owner_cep?: string | null
+          owner_city?: string | null
+          owner_complement?: string | null
           owner_cpf_cnpj?: string | null
           owner_email?: string | null
+          owner_marital_status?:
+            | Database["public"]["Enums"]["marital_status"]
+            | null
           owner_name?: string | null
+          owner_neighborhood?: string | null
+          owner_number?: string | null
           owner_phone?: string | null
+          owner_rg?: string | null
+          owner_state?: string | null
+          owner_street?: string | null
+          owner_type?: Database["public"]["Enums"]["owner_type"] | null
+          owner_whatsapp?: string | null
           parking_spaces?: number | null
+          property_features?: string[] | null
           property_type?: Database["public"]["Enums"]["property_type"]
           published?: boolean | null
           published_on_portal?: boolean | null
           purpose?: Database["public"]["Enums"]["property_purpose"]
+          registration_number?: string | null
           rental_price?: number | null
           sale_price?: number | null
           state?: string | null
@@ -241,6 +366,7 @@ export type Database = {
           suites?: number | null
           title?: string
           total_area?: number | null
+          uncovered_parking?: number | null
           updated_at?: string | null
           useful_area?: number | null
           user_id?: string
@@ -276,6 +402,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      property_authorizations: {
+        Row: {
+          created_at: string | null
+          filled_content: string
+          id: string
+          property_id: string
+          signature_method: string | null
+          signature_url: string | null
+          signed_at: string | null
+          template_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          filled_content: string
+          id?: string
+          property_id: string
+          signature_method?: string | null
+          signature_url?: string | null
+          signed_at?: string | null
+          template_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          filled_content?: string
+          id?: string
+          property_id?: string
+          signature_method?: string | null
+          signature_url?: string | null
+          signed_at?: string | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_authorizations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_authorizations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "authorization_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_code_sequence: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_sequence: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_sequence?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_sequence?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       property_documents: {
         Row: {
@@ -350,6 +545,189 @@ export type Database = {
           },
         ]
       }
+      property_partners: {
+        Row: {
+          cep: string | null
+          city: string | null
+          complement: string | null
+          cpf_cnpj: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          neighborhood: string | null
+          number: string | null
+          phone: string | null
+          property_id: string
+          rg: string | null
+          state: string | null
+          street: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string | null
+          property_id: string
+          rg?: string | null
+          state?: string | null
+          street?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string | null
+          property_id?: string
+          rg?: string | null
+          state?: string | null
+          street?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_partners_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_spouse: {
+        Row: {
+          cep: string | null
+          city: string | null
+          complement: string | null
+          cpf: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          neighborhood: string | null
+          number: string | null
+          phone: string | null
+          property_id: string
+          rg: string | null
+          state: string | null
+          street: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string | null
+          property_id: string
+          rg?: string | null
+          state?: string | null
+          street?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string | null
+          property_id?: string
+          rg?: string | null
+          state?: string | null
+          street?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_spouse_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_statistics: {
+        Row: {
+          created_at: string | null
+          id: string
+          property_id: string
+          shares_email: number | null
+          shares_facebook: number | null
+          shares_instagram: number | null
+          shares_whatsapp: number | null
+          updated_at: string | null
+          views_email: number | null
+          views_facebook: number | null
+          views_instagram: number | null
+          views_whatsapp: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          property_id: string
+          shares_email?: number | null
+          shares_facebook?: number | null
+          shares_instagram?: number | null
+          shares_whatsapp?: number | null
+          updated_at?: string | null
+          views_email?: number | null
+          views_facebook?: number | null
+          views_instagram?: number | null
+          views_whatsapp?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          property_id?: string
+          shares_email?: number | null
+          shares_facebook?: number | null
+          shares_instagram?: number | null
+          shares_whatsapp?: number | null
+          updated_at?: string | null
+          views_email?: number | null
+          views_facebook?: number | null
+          views_instagram?: number | null
+          views_whatsapp?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_statistics_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_videos: {
         Row: {
           created_at: string | null
@@ -418,6 +796,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -444,6 +843,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_property_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -454,6 +857,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      marital_status:
+        | "solteiro"
+        | "casado"
+        | "uniao_estavel"
+        | "divorciado"
+        | "viuvo"
+      owner_type: "fisica" | "juridica"
       property_condition: "novo" | "usado"
       property_purpose: "venda" | "locacao" | "venda_locacao"
       property_status: "disponivel" | "reservado" | "vendido" | "alugado"
@@ -597,6 +1007,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      marital_status: [
+        "solteiro",
+        "casado",
+        "uniao_estavel",
+        "divorciado",
+        "viuvo",
+      ],
+      owner_type: ["fisica", "juridica"],
       property_condition: ["novo", "usado"],
       property_purpose: ["venda", "locacao", "venda_locacao"],
       property_status: ["disponivel", "reservado", "vendido", "alugado"],
