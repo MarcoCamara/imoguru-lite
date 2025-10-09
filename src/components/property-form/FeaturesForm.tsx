@@ -44,13 +44,24 @@ export default function FeaturesForm({ formData, setFormData }: FeaturesFormProp
         </div>
 
         <div>
-          <Label htmlFor="parking_spaces">Vagas</Label>
+          <Label htmlFor="covered_parking">Vagas Cobertas</Label>
           <Input
-            id="parking_spaces"
+            id="covered_parking"
             type="number"
             min="0"
-            value={formData.parking_spaces}
-            onChange={(e) => setFormData({ ...formData, parking_spaces: parseInt(e.target.value) || 0 })}
+            value={formData.covered_parking || 0}
+            onChange={(e) => setFormData({ ...formData, covered_parking: parseInt(e.target.value) || 0 })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="uncovered_parking">Vagas Descobertas</Label>
+          <Input
+            id="uncovered_parking"
+            type="number"
+            min="0"
+            value={formData.uncovered_parking || 0}
+            onChange={(e) => setFormData({ ...formData, uncovered_parking: parseInt(e.target.value) || 0 })}
           />
         </div>
       </div>
