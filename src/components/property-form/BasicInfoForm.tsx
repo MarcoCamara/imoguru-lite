@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PROPERTY_TYPES } from '@/lib/propertyConstants';
 
 interface BasicInfoFormProps {
   formData: any;
@@ -12,24 +13,35 @@ interface BasicInfoFormProps {
 export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormProps) {
   return (
     <div className="space-y-4 pt-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="title">Título do Anúncio *</Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Ex: Apartamento 3 quartos no Centro"
-          />
-        </div>
+      <div>
+        <Label htmlFor="title">Título do Anúncio *</Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="Ex: Apartamento 3 quartos no Centro"
+        />
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="code">Código do Imóvel</Label>
           <Input
             id="code"
             value={formData.code}
-            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-            placeholder="Ex: APT001"
+            disabled
+            placeholder="Gerado automaticamente ao salvar"
+            className="bg-muted"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="registration_number">Matrícula do Imóvel</Label>
+          <Input
+            id="registration_number"
+            value={formData.registration_number || ''}
+            onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
+            placeholder="Número da matrícula"
           />
         </div>
       </div>
@@ -62,12 +74,16 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="apartamento">Apartamento</SelectItem>
-              <SelectItem value="casa">Casa</SelectItem>
-              <SelectItem value="terreno">Terreno</SelectItem>
-              <SelectItem value="comercial">Comercial</SelectItem>
-              <SelectItem value="rural">Rural</SelectItem>
-              <SelectItem value="industrial">Industrial</SelectItem>
+              <optgroup label="Residencial">
+                {PROPERTY_TYPES.filter(t => t.category === 'Residencial').map(type => (
+                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                ))}
+              </optgroup>
+              <optgroup label="Comercial">
+                {PROPERTY_TYPES.filter(t => t.category === 'Comercial').map(type => (
+                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                ))}
+              </optgroup>
             </SelectContent>
           </Select>
         </div>
@@ -133,18 +149,7 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
         />
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="accepts_exchange"
-          checked={formData.accepts_exchange}
-          onCheckedChange={(checked) => setFormData({ ...formData, accepts_exchange: checked })}
-        />
-        <Label htmlFor="accepts_exchange" className="cursor-pointer">
-          Aceita permuta
-        </Label>
-      </div>
-
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center space-x-2">
           <Checkbox
             id="published"
@@ -164,6 +169,17 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
           />
           <Label htmlFor="published_on_portal" className="cursor-pointer">
             Publicado em portais
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="accepts_exchange"
+            checked={formData.accepts_exchange}
+            onCheckedChange={(checked) => setFormData({ ...formData, accepts_exchange: checked })}
+          />
+          <Label htmlFor="accepts_exchange" className="cursor-pointer">
+            Aceita permuta
           </Label>
         </div>
       </div>

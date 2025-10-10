@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Upload, Trash2, FileText } from 'lucide-react';
+import { toast } from 'sonner';
+import { DOCUMENT_TYPES } from '@/lib/propertyConstants';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface DocumentsFormProps {
@@ -13,11 +14,10 @@ interface DocumentsFormProps {
 }
 
 export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
-  const { toast } = useToast();
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [documentType, setDocumentType] = useState('escritura');
+  const [documentType, setDocumentType] = useState('IPTU');
 
   useEffect(() => {
     if (propertyId) {
@@ -38,11 +38,7 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
       if (error) throw error;
       setDocuments(data || []);
     } catch (error: any) {
-      toast({
-        title: 'Erro ao carregar documentos',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Erro ao carregar documentos');
     } finally {
       setLoading(false);
     }
@@ -50,10 +46,7 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!propertyId) {
-      toast({
-        title: 'Salve o imóvel primeiro',
-        variant: 'destructive',
-      });
+      toast.error('Salve o imóvel primeiro');
       return;
     }
 
@@ -88,17 +81,10 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
         if (dbError) throw dbError;
       }
 
-      toast({
-        title: 'Documentos enviados!',
-      });
-
+      toast.success('Documentos enviados!');
       loadDocuments();
     } catch (error: any) {
-      toast({
-        title: 'Erro ao enviar documentos',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Erro ao enviar documentos');
     } finally {
       setUploading(false);
     }
@@ -110,17 +96,10 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
       await supabase.storage.from('property-documents').remove([path]);
       await supabase.from('property_documents').delete().eq('id', docId);
 
-      toast({
-        title: 'Documento removido!',
-      });
-
+      toast.success('Documento removido!');
       loadDocuments();
     } catch (error: any) {
-      toast({
-        title: 'Erro ao remover',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Erro ao remover documento');
     }
   };
 
@@ -153,15 +132,9 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="escritura">Escritura</SelectItem>
-                  <SelectItem value="matricula">Matrícula</SelectItem>
-                  <SelectItem value="iptu">IPTU</SelectItem>
-                  <SelectItem value="contrato">Contrato</SelectItem>
-                  <SelectItem value="rg_proprietario">RG Proprietário</SelectItem>
-                  <SelectItem value="cpf_proprietario">CPF Proprietário</SelectItem>
-                  <SelectItem value="comprovante_residencia">Comprovante de Residência</SelectItem>
-                  <SelectItem value="certidao">Certidão</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
+                  {DOCUMENT_TYPES.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

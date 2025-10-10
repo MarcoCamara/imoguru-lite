@@ -1,6 +1,11 @@
+import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Search, Loader2 } from 'lucide-react';
+import { fetchCEP, formatCEP } from '@/lib/cepUtils';
+import { toast } from 'sonner';
 
 interface LocationFormProps {
   formData: any;
@@ -8,11 +13,74 @@ interface LocationFormProps {
 }
 
 export default function LocationForm({ formData, setFormData }: LocationFormProps) {
+  const [searchingCEP, setSearchingCEP] = useState(false);
+  const [searchingExactCEP, setSearchingExactCEP] = useState(false);
+
+  const handleCEPSearch = async (cep: string, isExact: boolean = false) => {
+    if (isExact) setSearchingExactCEP(true);
+    else setSearchingCEP(true);
+
+    try {
+      const data = await fetchCEP(cep);
+      if (data) {
+        if (isExact) {
+          setFormData({
+            ...formData,
+            exact_cep: formatCEP(data.cep),
+            exact_street: data.street,
+            exact_neighborhood: data.neighborhood,
+          });
+        } else {
+          setFormData({
+            ...formData,
+            cep: formatCEP(data.cep),
+            street: data.street,
+            neighborhood: data.neighborhood,
+            city: data.city,
+            state: data.state,
+          });
+        }
+        toast.success('CEP encontrado!');
+      } else {
+        toast.error('CEP não encontrado');
+      }
+    } catch (error) {
+      toast.error('Erro ao buscar CEP');
+    } finally {
+      if (isExact) setSearchingExactCEP(false);
+      else setSearchingCEP(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pt-4">
       <div>
         <h3 className="text-lg font-semibold mb-4">Endereço para Publicação</h3>
         <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="cep">CEP</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="cep"
+                  value={formData.cep}
+                  onChange={(e) => setFormData({ ...formData, cep: formatCEP(e.target.value) })}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleCEPSearch(formData.cep)}
+                  disabled={searchingCEP}
+                >
+                  {searchingCEP ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="street">Rua/Avenida</Label>
@@ -57,7 +125,7 @@ export default function LocationForm({ formData, setFormData }: LocationFormProp
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="city">Cidade</Label>
               <Input
@@ -76,16 +144,6 @@ export default function LocationForm({ formData, setFormData }: LocationFormProp
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 placeholder="UF"
                 maxLength={2}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cep">CEP</Label>
-              <Input
-                id="cep"
-                value={formData.cep}
-                onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
-                placeholder="00000-000"
               />
             </div>
           </div>
@@ -126,6 +184,30 @@ export default function LocationForm({ formData, setFormData }: LocationFormProp
           Estas informações não serão exibidas publicamente
         </p>
         <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="exact_cep">CEP Completo</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="exact_cep"
+                  value={formData.exact_cep}
+                  onChange={(e) => setFormData({ ...formData, exact_cep: formatCEP(e.target.value) })}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleCEPSearch(formData.exact_cep, true)}
+                  disabled={searchingExactCEP}
+                >
+                  {searchingExactCEP ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="exact_street">Rua/Avenida Completa</Label>
@@ -168,17 +250,6 @@ export default function LocationForm({ formData, setFormData }: LocationFormProp
                 placeholder="Bairro"
               />
             </div>
-          </div>
-
-          <div>
-            <Label htmlFor="exact_cep">CEP Completo</Label>
-            <Input
-              id="exact_cep"
-              value={formData.exact_cep}
-              onChange={(e) => setFormData({ ...formData, exact_cep: e.target.value })}
-              placeholder="00000-000"
-              className="md:w-1/3"
-            />
           </div>
         </div>
       </div>

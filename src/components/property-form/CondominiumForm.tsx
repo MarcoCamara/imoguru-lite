@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { CONDO_AMENITIES } from '@/lib/propertyConstants';
 
 interface CondominiumFormProps {
   formData: any;
@@ -11,29 +9,6 @@ interface CondominiumFormProps {
 }
 
 export default function CondominiumForm({ formData, setFormData }: CondominiumFormProps) {
-  const [amenities, setAmenities] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadAmenities();
-  }, []);
-
-  const loadAmenities = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('amenities')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setAmenities(data || []);
-    } catch (error) {
-      console.error('Error loading amenities:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const toggleAmenity = (amenityName: string) => {
     const current = formData.condo_amenities || [];
     const updated = current.includes(amenityName)
@@ -81,28 +56,29 @@ export default function CondominiumForm({ formData, setFormData }: CondominiumFo
         />
       </div>
 
-      <div>
-        <Label className="mb-3 block">Comodidades do Condomínio</Label>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {amenities.map((amenity) => (
-              <div key={amenity.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`amenity-${amenity.id}`}
-                  checked={(formData.condo_amenities || []).includes(amenity.name)}
-                  onCheckedChange={() => toggleAmenity(amenity.name)}
-                />
-                <Label htmlFor={`amenity-${amenity.id}`} className="cursor-pointer text-sm">
-                  {amenity.name}
-                </Label>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="space-y-4">
+        <Label className="text-base">Comodidades do Condomínio</Label>
+        <p className="text-sm text-muted-foreground">
+          Selecione as comodidades disponíveis no condomínio.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {CONDO_AMENITIES.map((amenity) => (
+            <div key={amenity} className="flex items-center space-x-2">
+              <Checkbox
+                id={`amenity-${amenity}`}
+                checked={(formData.condo_amenities || []).includes(amenity)}
+                onCheckedChange={() => toggleAmenity(amenity)}
+              />
+              <label
+                htmlFor={`amenity-${amenity}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                {amenity}
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
