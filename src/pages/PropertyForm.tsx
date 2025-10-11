@@ -133,6 +133,14 @@ export default function PropertyForm() {
           description: 'As alterações foram salvas com sucesso.',
         });
       } else {
+        // Gerar código automaticamente para novos imóveis
+        const { data: codeData, error: codeError } = await supabase
+          .rpc('generate_property_code');
+
+        if (codeError) throw codeError;
+
+        dataToSave.code = codeData;
+
         const { error } = await supabase
           .from('properties')
           .insert([dataToSave]);
@@ -141,7 +149,7 @@ export default function PropertyForm() {
 
         toast({
           title: 'Imóvel cadastrado!',
-          description: 'O imóvel foi adicionado com sucesso.',
+          description: `O imóvel foi adicionado com código ${codeData}.`,
         });
       }
 
