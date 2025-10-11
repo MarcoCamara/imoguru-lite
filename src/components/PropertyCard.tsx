@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bed, Bath, Car, Ruler, MapPin, Edit, Share2 } from 'lucide-react';
+import { Bed, Bath, Car, Ruler, MapPin, Edit, Share2, Trash2, Archive } from 'lucide-react';
 
 interface PropertyCardProps {
   property: any;
@@ -10,6 +10,8 @@ interface PropertyCardProps {
   onSelect: (id: string) => void;
   onEdit: () => void;
   onShare: () => void;
+  onDelete: () => void;
+  onArchive: () => void;
 }
 
 export default function PropertyCard({
@@ -18,6 +20,8 @@ export default function PropertyCard({
   onSelect,
   onEdit,
   onShare,
+  onDelete,
+  onArchive,
 }: PropertyCardProps) {
   const coverImage = property.property_images?.find((img: any) => img.is_cover)?.url ||
     property.property_images?.[0]?.url;
@@ -70,6 +74,9 @@ export default function PropertyCard({
           <Badge variant={property.status === 'disponivel' ? 'default' : 'outline'}>
             {statusLabels[property.status]}
           </Badge>
+          {property.archived && (
+            <Badge variant="destructive">Arquivado</Badge>
+          )}
         </div>
       </div>
 
@@ -126,7 +133,13 @@ export default function PropertyCard({
             <Edit className="h-4 w-4 mr-2" />
             Editar
           </Button>
-          <Button variant="outline" size="sm" onClick={onShare}>
+          <Button variant="outline" size="sm" onClick={onArchive} title="Arquivar">
+            <Archive className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={onDelete} title="Deletar">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={onShare} title="Compartilhar">
             <Share2 className="h-4 w-4" />
           </Button>
         </div>

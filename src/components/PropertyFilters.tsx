@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
 
 interface PropertyFiltersProps {
@@ -17,6 +18,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
     propertyType: 'all',
     status: 'all',
     city: '',
+    showArchived: false,
     minBedrooms: 0,
     minBathrooms: 0,
     minParkingSpaces: 0,
@@ -34,6 +36,11 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
 
   const applyFilters = () => {
     let filtered = [...properties];
+
+    // Filtrar arquivados
+    if (!filters.showArchived) {
+      filtered = filtered.filter(p => !p.archived);
+    }
 
     if (filters.purpose !== 'all') {
       filtered = filtered.filter(p => p.purpose === filters.purpose || p.purpose === 'venda_locacao');
@@ -81,6 +88,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
       propertyType: 'all',
       status: 'all',
       city: '',
+      showArchived: false,
       minBedrooms: 0,
       minBathrooms: 0,
       minParkingSpaces: 0,
@@ -169,6 +177,17 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
             onChange={(e) => setFilters({ ...filters, city: e.target.value })}
           />
         </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="showArchived"
+          checked={filters.showArchived}
+          onCheckedChange={(checked) => setFilters({ ...filters, showArchived: checked as boolean })}
+        />
+        <Label htmlFor="showArchived" className="cursor-pointer">
+          Mostrar imóveis arquivados
+        </Label>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

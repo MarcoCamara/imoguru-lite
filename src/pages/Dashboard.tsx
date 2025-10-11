@@ -102,6 +102,63 @@ export default function Dashboard() {
     navigate('/share', { state: { propertyIds } });
   };
 
+  const handleDelete = async (propertyId: string) => {
+    if (!confirm('Tem certeza que deseja deletar este imóvel? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Imóvel deletado!',
+        description: 'O imóvel foi removido com sucesso.',
+      });
+
+      fetchProperties();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao deletar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleArchive = async (propertyId: string) => {
+    try {
+      const property = properties.find(p => p.id === propertyId);
+      const newArchivedState = !property?.archived;
+
+      const { error } = await supabase
+        .from('properties')
+        .update({ archived: newArchivedState })
+        .eq('id', propertyId);
+
+      if (error) throw error;
+
+      toast({
+        title: newArchivedState ? 'Imóvel arquivado!' : 'Imóvel desarquivado!',
+        description: newArchivedState 
+          ? 'O imóvel foi movido para arquivados.' 
+          : 'O imóvel está ativo novamente.',
+      });
+
+      fetchProperties();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao arquivar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -230,6 +287,8 @@ export default function Dashboard() {
                   onSelect={handleSelectProperty}
                   onEdit={() => navigate(`/property/${property.id}`)}
                   onShare={() => handleShare([property.id])}
+                  onDelete={() => handleDelete(property.id)}
+                  onArchive={() => handleArchive(property.id)}
                 />
               ))}
             </div>
