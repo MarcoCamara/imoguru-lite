@@ -8,7 +8,13 @@ import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 import PropertyFilters from '@/components/PropertyFilters';
 import PropertyCard from '@/components/PropertyCard';
-import { exportToCSV } from '@/lib/exportUtils';
+import { exportToCSV, exportToXLSX, exportToJSON, shareProperties } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Dashboard() {
   const { user, signOut, loading, isAdmin } = useAuth();
@@ -69,10 +75,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleExportCSV = () => {
-    const propertiesToExport = selectedProperties.length > 0
+  const getPropertiesToExport = () => {
+    return selectedProperties.length > 0
       ? properties.filter(p => selectedProperties.includes(p.id))
       : filteredProperties;
+  };
+
+  const handleExport = (format: 'csv' | 'xlsx' | 'json') => {
+    const propertiesToExport = getPropertiesToExport();
 
     if (propertiesToExport.length === 0) {
       toast({
@@ -83,11 +93,55 @@ export default function Dashboard() {
       return;
     }
 
-    exportToCSV(propertiesToExport);
+    switch (format) {
+      case 'csv':
+        exportToCSV(propertiesToExport);
+        break;
+      case 'xlsx':
+        exportToXLSX(propertiesToExport);
+        break;
+      case 'json':
+        exportToJSON(propertiesToExport);
+        break;
+    }
+
     toast({
       title: 'Exportação concluída!',
-      description: `${propertiesToExport.length} imóveis exportados`,
+      description: `${propertiesToExport.length} imóveis exportados em ${format.toUpperCase()}`,
     });
+  };
+
+  const handleShareMultiple = async () => {
+    const propertiesToShare = getPropertiesToExport();
+
+    if (propertiesToShare.length === 0) {
+      toast({
+        title: 'Nenhum imóvel para compartilhar',
+        description: 'Selecione imóveis ou ajuste os filtros',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const result = await shareProperties(propertiesToShare);
+    
+    if (result === true) {
+      toast({
+        title: 'Compartilhado!',
+        description: `${propertiesToShare.length} imóveis compartilhados`,
+      });
+    } else if (result === 'clipboard') {
+      toast({
+        title: 'Copiado!',
+        description: 'Informações copiadas para a área de transferência',
+      });
+    } else {
+      toast({
+        title: 'Erro ao compartilhar',
+        description: 'Não foi possível compartilhar os imóveis',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSelectProperty = (propertyId: string) => {
@@ -96,10 +150,6 @@ export default function Dashboard() {
         ? prev.filter(id => id !== propertyId)
         : [...prev, propertyId]
     );
-  };
-
-  const handleShare = (propertyIds: string[]) => {
-    navigate('/share', { state: { propertyIds } });
   };
 
   const handleDelete = async (propertyId: string) => {
@@ -193,24 +243,34 @@ export default function Dashboard() {
                 <Filter className="h-4 w-4 mr-2" />
                 Filtros
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleExport('csv')}>
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                    Exportar Excel (XLSX)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('json')}>
+                    Exportar JSON
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleExportCSV}
+                onClick={handleShareMultiple}
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Exportar CSV
+                <Share2 className="h-4 w-4 mr-2" />
+                Compartilhar
+                {selectedProperties.length > 0 && ` (${selectedProperties.length})`}
               </Button>
-              {selectedProperties.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleShare(selectedProperties)}
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Compartilhar ({selectedProperties.length})
-                </Button>
-              )}
               <Button
                 onClick={() => navigate('/property/new')}
                 size="sm"
@@ -286,7 +346,14 @@ export default function Dashboard() {
                   selected={selectedProperties.includes(property.id)}
                   onSelect={handleSelectProperty}
                   onEdit={() => navigate(`/property/${property.id}`)}
-                  onShare={() => handleShare([property.id])}
+                  onShare={async () => {
+                    const result = await shareProperties([property]);
+                    if (result === true) {
+                      toast({ title: 'Compartilhado!', description: 'Imóvel compartilhado' });
+                    } else if (result === 'clipboard') {
+                      toast({ title: 'Copiado!', description: 'Informações copiadas para a área de transferência' });
+                    }
+                  }}
                   onDelete={() => handleDelete(property.id)}
                   onArchive={() => handleArchive(property.id)}
                 />
