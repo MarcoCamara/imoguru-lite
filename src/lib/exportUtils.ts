@@ -103,35 +103,4 @@ export const exportToJSON = (properties: any[]) => {
   document.body.removeChild(link);
 };
 
-export const shareProperties = async (properties: any[]) => {
-  const data = getPropertyData(properties);
-  const text = `Confira ${properties.length} imóve${properties.length === 1 ? 'l' : 'is'}:\n\n${
-    data.slice(0, 3).map(prop => 
-      `${prop.Título} - ${prop.Cidade}/${prop.Estado}\n${prop['Preço de Venda (R$)'] ? `R$ ${prop['Preço de Venda (R$)']}` : `Aluguel: R$ ${prop['Preço de Locação (R$)']}`}`
-    ).join('\n\n')
-  }${properties.length > 3 ? `\n\n...e mais ${properties.length - 3} imóveis` : ''}`;
-
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: 'Imóveis - Imóvel Mate',
-        text: text,
-      });
-      return true;
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        console.error('Error sharing:', error);
-      }
-      return false;
-    }
-  } else {
-    // Fallback: copy to clipboard
-    try {
-      await navigator.clipboard.writeText(text);
-      return 'clipboard';
-    } catch (error) {
-      console.error('Error copying to clipboard:', error);
-      return false;
-    }
-  }
-};
+// Removed shareProperties function - now handled by ShareDialog component

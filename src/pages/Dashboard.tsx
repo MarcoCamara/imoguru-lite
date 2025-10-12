@@ -8,13 +8,14 @@ import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 import PropertyFilters from '@/components/PropertyFilters';
 import PropertyCard from '@/components/PropertyCard';
-import { exportToCSV, exportToXLSX, exportToJSON, shareProperties } from '@/lib/exportUtils';
+import { exportToCSV, exportToXLSX, exportToJSON } from '@/lib/exportUtils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ShareDialog from '@/components/ShareDialog';
 
 export default function Dashboard() {
   const { user, signOut, loading, isAdmin } = useAuth();
@@ -25,6 +26,8 @@ export default function Dashboard() {
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [propertyToShare, setPropertyToShare] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -111,7 +114,12 @@ export default function Dashboard() {
     });
   };
 
-  const handleShareMultiple = async () => {
+  const handleShareSingle = (property: any) => {
+    setPropertyToShare(property);
+    setShareDialogOpen(true);
+  };
+
+  const handleShareMultiple = () => {
     const propertiesToShare = getPropertiesToExport();
 
     if (propertiesToShare.length === 0) {
@@ -123,22 +131,13 @@ export default function Dashboard() {
       return;
     }
 
-    const result = await shareProperties(propertiesToShare);
-    
-    if (result === true) {
-      toast({
-        title: 'Compartilhado!',
-        description: `${propertiesToShare.length} imóveis compartilhados`,
-      });
-    } else if (result === 'clipboard') {
-      toast({
-        title: 'Copiado!',
-        description: 'Informações copiadas para a área de transferência',
-      });
+    if (propertiesToShare.length === 1) {
+      setPropertyToShare(propertiesToShare[0]);
+      setShareDialogOpen(true);
     } else {
       toast({
-        title: 'Erro ao compartilhar',
-        description: 'Não foi possível compartilhar os imóveis',
+        title: 'Compartilhamento múltiplo',
+        description: 'Selecione apenas um imóvel por vez para compartilhar',
         variant: 'destructive',
       });
     }
@@ -346,14 +345,7 @@ export default function Dashboard() {
                   selected={selectedProperties.includes(property.id)}
                   onSelect={handleSelectProperty}
                   onEdit={() => navigate(`/property/${property.id}`)}
-                  onShare={async () => {
-                    const result = await shareProperties([property]);
-                    if (result === true) {
-                      toast({ title: 'Compartilhado!', description: 'Imóvel compartilhado' });
-                    } else if (result === 'clipboard') {
-                      toast({ title: 'Copiado!', description: 'Informações copiadas para a área de transferência' });
-                    }
-                  }}
+                  onShare={() => handleShareSingle(property)}
                   onDelete={() => handleDelete(property.id)}
                   onArchive={() => handleArchive(property.id)}
                 />
@@ -362,6 +354,12 @@ export default function Dashboard() {
           </>
         )}
       </main>
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        property={propertyToShare}
+      />
     </div>
   );
 }

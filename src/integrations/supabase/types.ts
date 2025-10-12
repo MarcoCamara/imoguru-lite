@@ -770,6 +770,7 @@ export type Database = {
           max_images: number | null
           message_format: string | null
           name: string
+          platform: string
           updated_at: string | null
         }
         Insert: {
@@ -781,6 +782,7 @@ export type Database = {
           max_images?: number | null
           message_format?: string | null
           name: string
+          platform?: string
           updated_at?: string | null
         }
         Update: {
@@ -792,6 +794,7 @@ export type Database = {
           max_images?: number | null
           message_format?: string | null
           name?: string
+          platform?: string
           updated_at?: string | null
         }
         Relationships: []
