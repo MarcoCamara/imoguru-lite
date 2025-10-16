@@ -53,18 +53,21 @@ export const formatPropertyValue = (key: string, value: any, property?: any): st
 };
 
 export const formatMessageWithTemplate = (template: ShareTemplate, property: any): string => {
-  let message = template.message_format;
+  let message = template.message_format || '';
+
+  // Normalize double-brace placeholders to single-brace to simplify replacement
+  message = message.replace(/\{\{\s*(\w+)\s*\}\}/g, '{$1}');
   
-  template.fields.forEach(field => {
-    const placeholder = `{${field}}`;
+  template.fields.forEach((field) => {
+    const re = new RegExp(`\\{${field}\\}`, 'g');
     const value = formatPropertyValue(field, property[field], property);
-    message = message.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
+    message = message.replace(re, value);
   });
   
   // Remove empty lines and clean up
   message = message
     .split('\n')
-    .filter(line => !line.match(/^[\s]*\{.*\}[\s]*$/))
+    .filter((line) => !line.match(/^[\s]*\{.*\}[\s]*$/))
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -110,12 +113,10 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
   // Detect if mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // Use WhatsApp API directly
-  // On mobile: opens WhatsApp app
-  // On desktop: opens WhatsApp Web
+  // On desktop: opens WhatsApp via universal API (redirects to Web/App)
   const whatsappUrl = isMobile 
     ? `whatsapp://send?text=${encodedMessage}`
-    : `https://web.whatsapp.com/send?text=${encodedMessage}`;
+    : `https://api.whatsapp.com/send?text=${encodedMessage}`;
   
   window.open(whatsappUrl, '_blank');
   return true;
