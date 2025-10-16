@@ -1,1 +1,7 @@
 project_id = "jimcnygtbinkiyaerhdr"
+
+[functions.send-property-email]
+verify_jwt = false
+
+[functions.auth-email-hook]
+verify_jwt = false
