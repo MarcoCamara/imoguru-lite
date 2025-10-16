@@ -19,6 +19,7 @@ import OwnerFormExpanded from '@/components/property-form/OwnerFormExpanded';
 import PropertyFeaturesCheckbox from '@/components/property-form/PropertyFeaturesCheckbox';
 import NearbyAmenitiesCheckbox from '@/components/property-form/NearbyAmenitiesCheckbox';
 import StatisticsTab from '@/components/property-form/StatisticsTab';
+import PartnershipForm from '@/components/property-form/PartnershipForm';
 
 export default function PropertyForm() {
   const { id } = useParams();
@@ -71,6 +72,10 @@ export default function PropertyForm() {
     exact_complement: '',
     exact_neighborhood: '',
     exact_cep: '',
+    capture_type: 'propria',
+    captured_by: '',
+    available_for_partnership: false,
+    partnerships_notes: '',
   });
 
   useEffect(() => {
@@ -188,7 +193,7 @@ export default function PropertyForm() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 gap-2">
+            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11 gap-2">
               <TabsTrigger value="basic">Básico</TabsTrigger>
               <TabsTrigger value="location">Localização</TabsTrigger>
               <TabsTrigger value="features">Características</TabsTrigger>
@@ -198,6 +203,7 @@ export default function PropertyForm() {
               <TabsTrigger value="media">Mídia</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
               <TabsTrigger value="owner">Proprietário</TabsTrigger>
+              <TabsTrigger value="partnership">Parceria</TabsTrigger>
               <TabsTrigger value="statistics">Estatísticas</TabsTrigger>
             </TabsList>
 
@@ -219,7 +225,7 @@ export default function PropertyForm() {
             </TabsContent>
 
             <TabsContent value="condominium">
-              <CondominiumForm formData={formData} setFormData={setFormData} />
+              <CondominiumForm formData={formData} setFormData={setFormData} propertyId={id} />
             </TabsContent>
 
             <TabsContent value="nearby">
@@ -237,6 +243,10 @@ export default function PropertyForm() {
 
             <TabsContent value="owner">
               <OwnerFormExpanded formData={formData} setFormData={setFormData} propertyId={id} />
+            </TabsContent>
+
+            <TabsContent value="partnership">
+              <PartnershipForm formData={formData} setFormData={setFormData} />
             </TabsContent>
 
             <TabsContent value="statistics">

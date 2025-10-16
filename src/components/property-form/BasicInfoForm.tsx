@@ -73,17 +73,27 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <optgroup label="Residencial">
-                {PROPERTY_TYPES.filter(t => t.category === 'Residencial').map(type => (
-                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </optgroup>
-              <optgroup label="Comercial">
-                {PROPERTY_TYPES.filter(t => t.category === 'Comercial').map(type => (
-                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </optgroup>
+            <SelectContent className="max-h-[300px]">
+              <div className="font-semibold px-2 py-1.5 text-sm">Residencial</div>
+              {PROPERTY_TYPES.filter(t => t.category === 'Residencial').map(type => (
+                <SelectItem key={type.value} value={type.value} className="pl-6">
+                  {type.label}
+                </SelectItem>
+              ))}
+              
+              <div className="font-semibold px-2 py-1.5 text-sm mt-2">Comercial</div>
+              {PROPERTY_TYPES.filter(t => t.category === 'Comercial').map(type => (
+                <SelectItem key={type.value} value={type.value} className="pl-6">
+                  {type.label}
+                </SelectItem>
+              ))}
+              
+              <div className="font-semibold px-2 py-1.5 text-sm mt-2">Rural</div>
+              {PROPERTY_TYPES.filter(t => t.category === 'Rural').map(type => (
+                <SelectItem key={type.value} value={type.value} className="pl-6">
+                  {type.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

@@ -1,14 +1,17 @@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { CONDO_AMENITIES } from '@/lib/propertyConstants';
+import CondominiumMediaForm from './CondominiumMediaForm';
 
 interface CondominiumFormProps {
   formData: any;
   setFormData: (data: any) => void;
+  propertyId?: string;
 }
 
-export default function CondominiumForm({ formData, setFormData }: CondominiumFormProps) {
+export default function CondominiumForm({ formData, setFormData, propertyId }: CondominiumFormProps) {
   const toggleAmenity = (amenityName: string) => {
     const current = formData.condo_amenities || [];
     const updated = current.includes(amenityName)
@@ -80,6 +83,10 @@ export default function CondominiumForm({ formData, setFormData }: CondominiumFo
           ))}
         </div>
       </div>
+
+      <Separator />
+
+      <CondominiumMediaForm propertyId={propertyId} />
     </div>
   );
 }

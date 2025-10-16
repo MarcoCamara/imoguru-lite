@@ -1,19 +1,29 @@
 // Constantes para tipos de imóvel, características, etc.
 
 export const PROPERTY_TYPES = [
+  // Residencial
   { value: 'apartamento', label: 'Apartamento', category: 'Residencial' },
+  { value: 'casa_rua', label: 'Casa de Rua', category: 'Residencial' },
+  { value: 'casa_condominio', label: 'Casa em Condomínio', category: 'Residencial' },
   { value: 'studio_kitnet', label: 'Studio / Kitnet', category: 'Residencial' },
   { value: 'cobertura', label: 'Cobertura', category: 'Residencial' },
   { value: 'flat', label: 'Flat', category: 'Residencial' },
-  { value: 'casa_rua', label: 'Casa de Rua', category: 'Residencial' },
-  { value: 'casa_condominio', label: 'Casa em Condomínio', category: 'Residencial' },
   { value: 'terreno_rua', label: 'Terreno de Rua', category: 'Residencial' },
   { value: 'terreno_condominio', label: 'Terreno em Condomínio', category: 'Residencial' },
+  
+  // Comercial
   { value: 'sala_comercial', label: 'Sala Comercial', category: 'Comercial' },
-  { value: 'loja', label: 'Loja', category: 'Comercial' },
-  { value: 'galpao', label: 'Galpão', category: 'Comercial' },
-  { value: 'predio_comercial', label: 'Prédio Comercial', category: 'Comercial' },
+  { value: 'ponto_loja', label: 'Ponto/Loja', category: 'Comercial' },
+  { value: 'galpao', label: 'Galpão/Depósito/Barracão', category: 'Comercial' },
+  { value: 'consultorio', label: 'Consultório', category: 'Comercial' },
+  
+  // Rural
+  { value: 'sitio_fazenda', label: 'Sítio/Fazenda', category: 'Rural' },
+  { value: 'chacara_rancho', label: 'Chácara/Rancho', category: 'Rural' },
+  { value: 'gleba', label: 'Gleba', category: 'Rural' },
 ];
+
+export const PROPERTY_CATEGORIES = ['Residencial', 'Comercial', 'Rural'];
 
 export const PROPERTY_FEATURES = [
   'Ar Condicionado',
