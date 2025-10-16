@@ -19,6 +19,8 @@ interface SystemSettings {
   max_image_size_mb: number;
   video_upload_enabled: boolean;
   video_links_enabled: boolean;
+  logo_url?: string;
+  favicon_url?: string;
 }
 
 export default function Settings() {
@@ -26,6 +28,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>({
     app_name: 'ImoGuru',
     primary_color: '#2563eb',
@@ -81,6 +84,98 @@ export default function Settings() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'Erro',
+        description: 'O arquivo deve ter no máximo 2MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo/logo.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('system-branding')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('system-branding')
+        .getPublicUrl(fileName);
+
+      setSettings({ ...settings, logo_url: publicUrl });
+
+      toast({
+        title: 'Sucesso',
+        description: 'Logo enviado com sucesso!',
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar o logo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      toast({
+        title: 'Erro',
+        description: 'O favicon deve ter no máximo 500KB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `favicon/favicon.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('system-branding')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('system-branding')
+        .getPublicUrl(fileName);
+
+      setSettings({ ...settings, favicon_url: publicUrl });
+
+      toast({
+        title: 'Sucesso',
+        description: 'Favicon enviado com sucesso! As mudanças serão aplicadas após salvar.',
+      });
+    } catch (error) {
+      console.error('Error uploading favicon:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar o favicon.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -161,18 +256,23 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Logo do Sistema</Label>
                 <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 border-2 border-dashed rounded-md flex items-center justify-center bg-muted">
-                    <Building2 className="h-10 w-10 text-muted-foreground" />
+                  <div className="h-20 w-20 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
+                    {settings.logo_url ? (
+                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <Building2 className="h-10 w-10 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/jpg,image/svg+xml"
                       className="cursor-pointer"
-                      disabled
+                      onChange={handleLogoUpload}
+                      disabled={uploading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Em breve: Upload de logo personalizado (PNG, JPG ou SVG, máx. 2MB)
+                      Upload de logo personalizado (PNG, JPG ou SVG, máx. 2MB)
                     </p>
                   </div>
                 </div>
@@ -181,18 +281,23 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Favicon</Label>
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 border-2 border-dashed rounded-md flex items-center justify-center bg-muted">
-                    <Building2 className="h-6 w-6 text-muted-foreground" />
+                  <div className="h-12 w-12 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
+                    {settings.favicon_url ? (
+                      <img src={settings.favicon_url} alt="Favicon" className="w-full h-full object-contain" />
+                    ) : (
+                      <Building2 className="h-6 w-6 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1 space-y-2">
                     <Input
                       type="file"
-                      accept="image/*,.ico"
+                      accept="image/png,image/x-icon,image/vnd.microsoft.icon"
                       className="cursor-pointer"
-                      disabled
+                      onChange={handleFaviconUpload}
+                      disabled={uploading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Em breve: Upload de favicon (ICO, PNG 32x32, máx. 500KB)
+                      Upload de favicon (ICO, PNG 32x32, máx. 500KB)
                     </p>
                   </div>
                 </div>
