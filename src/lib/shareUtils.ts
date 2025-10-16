@@ -144,6 +144,14 @@ export const shareToEmail = async (property: any, message: string, images: strin
     const email = prompt('Digite o email do destinatário:');
     if (!email) return false;
 
+    // Get the default email template
+    const { data: emailTemplate } = await supabase
+      .from('share_templates')
+      .select('message_format')
+      .eq('platform', 'email')
+      .eq('is_default', true)
+      .single();
+
     // Call edge function to send formatted email
     const { data, error } = await supabase.functions.invoke('send-property-email', {
       body: {
@@ -170,6 +178,7 @@ export const shareToEmail = async (property: any, message: string, images: strin
         images: images,
         appName: systemSettings?.app_name || 'ImoGuru',
         logoUrl: systemSettings?.logo_url || null,
+        emailTemplate: emailTemplate?.message_format || null,
       },
     });
 

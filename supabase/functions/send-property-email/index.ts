@@ -14,25 +14,26 @@ interface PropertyEmailRequest {
   property: {
     title: string;
     code: string;
-    description: string;
-    property_type: string;
-    purpose: string;
-    city: string;
-    neighborhood: string;
-    bedrooms: number;
-    suites: number;
-    bathrooms: number;
-    parking_spaces: number;
-    useful_area: number;
-    total_area: number;
-    sale_price: number;
-    rental_price: number;
-    iptu_price: number;
-    condo_price: number;
+    description?: string;
+    property_type?: string;
+    purpose?: string;
+    city?: string;
+    neighborhood?: string;
+    bedrooms?: number;
+    suites?: number;
+    bathrooms?: number;
+    parking_spaces?: number;
+    useful_area?: number;
+    total_area?: number;
+    sale_price?: number;
+    rental_price?: number;
+    iptu_price?: number;
+    condo_price?: number;
   };
   images: string[];
   appName: string;
   logoUrl?: string;
+  emailTemplate?: string;
 }
 
 const formatPrice = (value: number): string => {
@@ -207,11 +208,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, property, images, appName, logoUrl }: PropertyEmailRequest = await req.json();
+    const { to, property, images, appName, logoUrl, emailTemplate }: PropertyEmailRequest = await req.json();
 
     console.log('Sending property email to:', to);
+    console.log('Using custom template:', !!emailTemplate);
 
-    const html = generateEmailHTML({ to, property, images, appName, logoUrl });
+    let html = '';
+
+    // If custom template provided, use it
+    if (emailTemplate) {
+      html = emailTemplate
+        .replace(/\{\{?title\}?\}/g, property.title || '')
+        .replace(/\{\{?code\}?\}/g, property.code || '')
+        .replace(/\{\{?description\}?\}/g, property.description || '')
+        .replace(/\{\{?property_type\}?\}/g, property.property_type || '')
+        .replace(/\{\{?purpose\}?\}/g, property.purpose || '')
+        .replace(/\{\{?city\}?\}/g, property.city || '')
+        .replace(/\{\{?neighborhood\}?\}/g, property.neighborhood || '')
+        .replace(/\{\{?bedrooms\}?\}/g, property.bedrooms?.toString() || '0')
+        .replace(/\{\{?suites\}?\}/g, property.suites?.toString() || '0')
+        .replace(/\{\{?bathrooms\}?\}/g, property.bathrooms?.toString() || '0')
+        .replace(/\{\{?parking_spaces\}?\}/g, property.parking_spaces?.toString() || '0')
+        .replace(/\{\{?total_area\}?\}/g, property.total_area?.toString() || '')
+        .replace(/\{\{?useful_area\}?\}/g, property.useful_area?.toString() || '')
+        .replace(/\{\{?sale_price\}?\}/g, property.sale_price ? formatPrice(property.sale_price) : '')
+        .replace(/\{\{?rental_price\}?\}/g, property.rental_price ? formatPrice(property.rental_price) + '/mês' : '')
+        .replace(/\{\{?iptu_price\}?\}/g, property.iptu_price ? formatPrice(property.iptu_price) + '/ano' : '')
+        .replace(/\{\{?condo_price\}?\}/g, property.condo_price ? formatPrice(property.condo_price) + '/mês' : '')
+        .replace(/\{\{?app_name\}?\}/g, appName)
+        .replace(/\{\{?logo_url\}?\}/g, logoUrl || '');
+
+      // Add images if available
+      if (images.length > 0) {
+        const imageHtml = images.slice(0, 3).map(url => `
+          <div style="margin: 10px 0;">
+            <img src="${url}" alt="${property.title}" style="max-width: 100%; height: auto; border-radius: 8px;" />
+          </div>
+        `).join('');
+        html += `<div style="margin-top: 20px;">${imageHtml}</div>`;
+      }
+    } else {
+      // Use default template
+      html = generateEmailHTML({ to, property, images, appName, logoUrl });
+    }
 
     const emailResponse = await resend.emails.send({
       from: `${appName} <onboarding@resend.dev>`,

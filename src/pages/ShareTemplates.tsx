@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import TemplatePreview from '@/components/TemplatePreview';
 
 interface ShareTemplate {
   id: string;
@@ -32,6 +33,8 @@ export default function ShareTemplates() {
   const [templates, setTemplates] = useState<ShareTemplate[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<ShareTemplate | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<ShareTemplate | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const availableFields = [
     'title', 'code', 'purpose', 'property_type', 'status',
@@ -215,6 +218,17 @@ export default function ShareTemplates() {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
+                        setPreviewTemplate(template);
+                        setPreviewOpen(true);
+                      }}
+                      title="Preview"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
                         setEditingTemplate(template);
                         setDialogOpen(true);
                       }}
@@ -390,6 +404,15 @@ export default function ShareTemplates() {
             )}
           </DialogContent>
         </Dialog>
+
+        {previewTemplate && (
+          <TemplatePreview
+            open={previewOpen}
+            onOpenChange={setPreviewOpen}
+            template={previewTemplate}
+            type="share"
+          />
+        )}
       </div>
     </div>
   );

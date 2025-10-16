@@ -10,8 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Edit, Trash2, Download, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Download, FileText, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TemplatePreview from '@/components/TemplatePreview';
 
 interface AuthTemplate {
   id: string;
@@ -27,6 +28,8 @@ export default function AuthorizationTemplates() {
   const [templates, setTemplates] = useState<AuthTemplate[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<AuthTemplate | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<AuthTemplate | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -216,6 +219,17 @@ Assinatura do Proprietário`,
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => {
+                        setPreviewTemplate(template);
+                        setPreviewOpen(true);
+                      }}
+                      title="Preview"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDownload(template)}
                       title="Baixar"
                     >
@@ -312,6 +326,15 @@ Assinatura do Proprietário`,
             )}
           </DialogContent>
         </Dialog>
+
+        {previewTemplate && (
+          <TemplatePreview
+            open={previewOpen}
+            onOpenChange={setPreviewOpen}
+            template={previewTemplate}
+            type="authorization"
+          />
+        )}
       </div>
     </div>
   );
