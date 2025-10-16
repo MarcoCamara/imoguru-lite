@@ -67,8 +67,8 @@ export default function Settings() {
 
       const settingsObj: any = {};
       data?.forEach((item) => {
-        const value = item.setting_value;
-        settingsObj[item.setting_key] = typeof value === 'string' ? JSON.parse(value) : value;
+        // setting_value is jsonb, Supabase already parses it
+        settingsObj[item.setting_key] = item.setting_value;
       });
 
       setSettings((prev) => ({ ...prev, ...settingsObj }));
@@ -89,7 +89,8 @@ export default function Settings() {
     try {
       const updates = Object.entries(settings).map(([key, value]) => ({
         setting_key: key,
-        setting_value: JSON.stringify(value),
+        // setting_value is jsonb, no need to stringify
+        setting_value: value,
       }));
 
       for (const update of updates) {
