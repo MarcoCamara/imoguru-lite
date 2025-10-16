@@ -9,6 +9,8 @@ import Dashboard from "./pages/Dashboard";
 import PropertyForm from "./pages/PropertyForm";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
+import ShareTemplates from "./pages/ShareTemplates";
+import AuthorizationTemplates from "./pages/AuthorizationTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/property/:id" element={<PropertyForm />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/share-templates" element={<ShareTemplates />} />
+            <Route path="/authorization-templates" element={<AuthorizationTemplates />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

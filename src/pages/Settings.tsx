@@ -255,6 +255,29 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciamento Avançado</CardTitle>
+              <CardDescription>Acesse configurações avançadas do sistema</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/share-templates')}
+              >
+                Templates de Compartilhamento
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/authorization-templates')}
+              >
+                Templates de Autorização
+              </Button>
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
