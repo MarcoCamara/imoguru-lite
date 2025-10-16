@@ -12,6 +12,8 @@ import Profile from "./pages/Profile";
 import ShareTemplates from "./pages/ShareTemplates";
 import AuthorizationTemplates from "./pages/AuthorizationTemplates";
 import PropertyAuthorizations from "./pages/PropertyAuthorizations";
+import PrintTemplates from "./pages/PrintTemplates";
+import PublicPropertyView from "./pages/PublicPropertyView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/share-templates" element={<ShareTemplates />} />
             <Route path="/authorization-templates" element={<AuthorizationTemplates />} />
+            <Route path="/print-templates" element={<PrintTemplates />} />
+            <Route path="/imovel/:id" element={<PublicPropertyView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

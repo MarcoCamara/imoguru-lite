@@ -11,7 +11,7 @@ interface TemplatePreviewProps {
     fields?: string[];
     platform?: string;
   };
-  type: 'share' | 'authorization';
+  type: 'share' | 'authorization' | 'print';
 }
 
 // Imagens de exemplo
@@ -83,13 +83,19 @@ export default function TemplatePreview({ open, onOpenChange, template, type }: 
     formatted = formatted.replace(/\{app_name\}/g, 'ImoGuru');
     formatted = formatted.replace(/\{\{logo_url\}\}/g, '[Logo da empresa]');
     formatted = formatted.replace(/\{logo_url\}/g, '[Logo da empresa]');
+    formatted = formatted.replace(/\{\{logo\}\}/g, '<div style="font-size: 14px;">ImoGuru</div>');
+    formatted = formatted.replace(/\{logo\}/g, '<div style="font-size: 14px;">ImoGuru</div>');
+
+    // Substituir QR code
+    formatted = formatted.replace(/\{\{qrcode\}\}/g, '<div style="width: 100px; height: 100px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">QR Code</div>');
+    formatted = formatted.replace(/\{qrcode\}/g, '<div style="width: 100px; height: 100px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999;">QR Code</div>');
 
     // Limpar placeholders não preenchidos
     formatted = formatted.replace(/\{\{[^}]+\}\}/g, '[não disponível]');
     formatted = formatted.replace(/\{[^}]+\}/g, '[não disponível]');
 
-    // Adicionar imagens de exemplo ao final (se for template de compartilhamento)
-    if (type === 'share' && isHtmlContent(content)) {
+    // Adicionar imagens de exemplo ao final (se for template de compartilhamento ou impressão)
+    if ((type === 'share' || type === 'print') && isHtmlContent(content)) {
       const imageHtml = sampleImages.map(url => `
         <div style="margin: 10px 0;">
           <img src="${url}" alt="Imagem do imóvel" style="max-width: 100%; height: auto; border-radius: 8px;" />
@@ -136,7 +142,7 @@ export default function TemplatePreview({ open, onOpenChange, template, type }: 
                 <pre className="whitespace-pre-wrap font-sans text-sm mb-4">
                   {content}
                 </pre>
-                {type === 'share' && (
+                {(type === 'share' || type === 'print') && (
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Fotos do Imóvel:</p>
                     <div className="grid grid-cols-3 gap-2">

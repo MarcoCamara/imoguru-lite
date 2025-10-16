@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Undo, Redo, AlignLeft, AlignCenter, 
-  AlignRight, AlignJustify, Table as TableIcon, Columns, Image as ImageIcon
+  AlignRight, AlignJustify, Table as TableIcon, Columns, Image as ImageIcon, QrCode
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
@@ -54,6 +54,10 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
   const addTwoColumns = () => {
     editor.chain().focus().insertTable({ rows: 1, cols: 2, withHeaderRow: false }).run();
+  };
+
+  const insertQRCode = () => {
+    editor.chain().focus().insertContent('<div style="text-align: center; padding: 20px;">{{qrcode}}</div>').run();
   };
 
   return (
@@ -215,6 +219,15 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           type="button"
         >
           <Columns className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={insertQRCode}
+          title="Inserir QR Code"
+          type="button"
+        >
+          <QrCode className="h-4 w-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-8" />

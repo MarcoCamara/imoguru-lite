@@ -488,6 +488,13 @@ export default function Settings() {
               >
                 Templates de Autorização
               </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/print-templates')}
+              >
+                Templates de Impressão
+              </Button>
             </CardContent>
           </Card>
 

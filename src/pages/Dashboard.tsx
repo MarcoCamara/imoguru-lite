@@ -335,7 +335,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               {systemSettings.logo_url ? (
                 <div 
-                  className="rounded-lg overflow-hidden"
+                  className="rounded-lg overflow-hidden flex-shrink-0"
                   style={{
                     height: `${systemSettings.logo_size_mobile || 40}px`,
                     width: `${systemSettings.logo_size_mobile || 40}px`,
@@ -370,18 +370,18 @@ export default function Dashboard() {
                   />
                 </div>
               ) : (
-                <Building2 className="h-8 w-8 md:h-10 md:h-10 lg:h-12 lg:w-12 text-primary" />
+                <Building2 className="h-8 w-8 md:h-10 md:h-10 lg:h-12 lg:w-12 text-primary flex-shrink-0" />
               )}
-              <div>
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
-                  {systemSettings.app_name}
-                </h1>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {isAdmin ? 'Administrador' : 'Meus Imóveis'}
-                </p>
-              </div>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+                {systemSettings.app_name}
+              </h1>
             </div>
             <div className="flex items-center gap-2">
+              {isAdmin && (
+                <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mr-2">
+                  Administrador
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="sm"
