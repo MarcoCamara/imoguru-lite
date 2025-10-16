@@ -11,9 +11,15 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface DocumentsFormProps {
   propertyId?: string;
+  pendingDocuments: Array<{ file: File; type: string }>;
+  setPendingDocuments: (docs: Array<{ file: File; type: string }>) => void;
 }
 
-export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
+export default function DocumentsForm({ 
+  propertyId,
+  pendingDocuments,
+  setPendingDocuments
+}: DocumentsFormProps) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -45,13 +51,16 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!propertyId) {
-      toast.error('Salve o imóvel primeiro');
-      return;
-    }
-
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    // If property is not saved yet, store files locally
+    if (!propertyId) {
+      const newDocs = Array.from(files).map(file => ({ file, type: documentType }));
+      setPendingDocuments([...pendingDocuments, ...newDocs]);
+      toast.success('Documentos adicionados! Serão enviados quando você salvar o imóvel.');
+      return;
+    }
 
     setUploading(true);
     try {
@@ -103,13 +112,9 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
     }
   };
 
-  if (!propertyId) {
-    return (
-      <div className="pt-4 text-center text-muted-foreground">
-        Salve o imóvel primeiro para fazer upload de documentos.
-      </div>
-    );
-  }
+  const removePendingDocument = (index: number) => {
+    setPendingDocuments(pendingDocuments.filter((_, i) => i !== index));
+  };
 
   if (loading) {
     return (
@@ -154,45 +159,88 @@ export default function DocumentsForm({ propertyId }: DocumentsFormProps) {
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
-        {documents.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            Nenhum documento enviado ainda.
-          </p>
-        ) : (
-          documents.map((doc) => (
-            <Card key={doc.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{doc.file_name}</p>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {doc.document_type.replace('_', ' ')}
-                    </p>
+      {/* Show pending documents if property not saved yet */}
+      {!propertyId && pendingDocuments.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-2">Documentos Pendentes</h3>
+          <div className="space-y-2">
+            {pendingDocuments.map((doc, index) => (
+              <Card key={index}>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{doc.file.name}</p>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {doc.type.replace('_', ' ')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(doc.file_url, '_blank')}
-                  >
-                    Ver
-                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(doc.id, doc.file_url)}
+                    onClick={() => removePendingDocument(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Os documentos serão enviados quando você salvar o imóvel.
+          </p>
+        </div>
+      )}
+
+      {/* Show saved documents if property exists */}
+      {propertyId && (
+        <div className="space-y-2">
+          {documents.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhum documento enviado ainda.
+            </p>
+          ) : (
+            documents.map((doc) => (
+              <Card key={doc.id}>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{doc.file_name}</p>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {doc.document_type.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(doc.file_url, '_blank')}
+                    >
+                      Ver
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(doc.id, doc.file_url)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {!propertyId && pendingDocuments.length === 0 && (
+        <p className="text-center text-muted-foreground py-8">
+          Nenhum documento adicionado ainda.
+        </p>
+      )}
 
       {uploading && (
         <div className="flex items-center justify-center py-4">

@@ -31,6 +31,7 @@ export default function PropertyForm() {
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const [pendingVideos, setPendingVideos] = useState<File[]>([]);
   const [pendingCondoImages, setPendingCondoImages] = useState<File[]>([]);
+  const [pendingDocuments, setPendingDocuments] = useState<Array<{ file: File; type: string }>>([]);
   const [formData, setFormData] = useState<any>({
     title: '',
     code: '',
@@ -185,6 +186,31 @@ export default function PropertyForm() {
 
         if (dbError) throw dbError;
       }
+
+      // Upload property documents
+      for (const doc of pendingDocuments) {
+        const fileExt = doc.file.name.split('.').pop();
+        const fileName = `${propertyId}/${doc.type}/${Math.random()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-documents')
+          .upload(fileName, doc.file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-documents')
+          .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('property_documents').insert({
+          property_id: propertyId,
+          document_type: doc.type,
+          file_url: publicUrl,
+          file_name: doc.file.name,
+        });
+
+        if (dbError) throw dbError;
+      }
     } catch (error: any) {
       toast({
         title: 'Erro ao fazer upload de mídia',
@@ -223,7 +249,7 @@ export default function PropertyForm() {
         if (error) throw error;
 
         // Upload pending media if any
-        if (pendingImages.length > 0 || pendingVideos.length > 0 || pendingCondoImages.length > 0) {
+        if (pendingImages.length > 0 || pendingVideos.length > 0 || pendingCondoImages.length > 0 || pendingDocuments.length > 0) {
           await uploadPendingMedia(id);
         }
 
@@ -251,7 +277,7 @@ export default function PropertyForm() {
         savedPropertyId = newProperty.id;
 
         // Upload pending media if any
-        if (pendingImages.length > 0 || pendingVideos.length > 0 || pendingCondoImages.length > 0) {
+        if (pendingImages.length > 0 || pendingVideos.length > 0 || pendingCondoImages.length > 0 || pendingDocuments.length > 0) {
           await uploadPendingMedia(savedPropertyId);
         }
 
@@ -353,7 +379,11 @@ export default function PropertyForm() {
             </TabsContent>
 
             <TabsContent value="documents">
-              <DocumentsForm propertyId={id} />
+              <DocumentsForm 
+                propertyId={id}
+                pendingDocuments={pendingDocuments}
+                setPendingDocuments={setPendingDocuments}
+              />
             </TabsContent>
 
             <TabsContent value="owner">
