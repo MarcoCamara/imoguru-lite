@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import BrandingPreview from '@/components/BrandingPreview';
 
 interface SystemSettings {
   app_name: string;
@@ -149,7 +150,51 @@ export default function Settings() {
                   id="app_name"
                   value={settings.app_name}
                   onChange={(e) => setSettings({ ...settings, app_name: e.target.value })}
+                  placeholder="ImoGuru"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nome que aparecerá no sistema e nas comunicações
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Logo do Sistema</Label>
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 border-2 border-dashed rounded-md flex items-center justify-center bg-muted">
+                    <Building2 className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="cursor-pointer"
+                      disabled
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Em breve: Upload de logo personalizado (PNG, JPG ou SVG, máx. 2MB)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Favicon</Label>
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 border-2 border-dashed rounded-md flex items-center justify-center bg-muted">
+                    <Building2 className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      type="file"
+                      accept="image/*,.ico"
+                      className="cursor-pointer"
+                      disabled
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Em breve: Upload de favicon (ICO, PNG 32x32, máx. 500KB)
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -254,6 +299,12 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          <BrandingPreview
+            appName={settings.app_name}
+            primaryColor={settings.primary_color}
+            secondaryColor={settings.secondary_color}
+          />
 
           <Card>
             <CardHeader>

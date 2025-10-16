@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import ShareTemplates from "./pages/ShareTemplates";
 import AuthorizationTemplates from "./pages/AuthorizationTemplates";
+import PropertyAuthorizations from "./pages/PropertyAuthorizations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/property/new" element={<PropertyForm />} />
             <Route path="/property/:id" element={<PropertyForm />} />
+            <Route path="/property/:id/authorizations" element={<PropertyAuthorizations />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/share-templates" element={<ShareTemplates />} />

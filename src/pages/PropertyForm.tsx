@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BasicInfoForm from '@/components/property-form/BasicInfoForm';
 import LocationForm from '@/components/property-form/LocationForm';
@@ -241,6 +241,18 @@ export default function PropertyForm() {
 
             <TabsContent value="statistics">
               <StatisticsTab propertyId={id} />
+              {id && (
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(`/property/${id}/authorizations`)}
+                    className="w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Gerenciar Autorizações
+                  </Button>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
 
