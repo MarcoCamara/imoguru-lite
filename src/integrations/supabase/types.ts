@@ -906,7 +906,7 @@ export type Database = {
         | "divorciado"
         | "viuvo"
       owner_type: "fisica" | "juridica"
-      property_condition: "novo" | "usado"
+      property_condition: "novo" | "usado" | "em_construcao"
       property_purpose: "venda" | "locacao" | "venda_locacao"
       property_status: "disponivel" | "reservado" | "vendido" | "alugado"
       property_type:
@@ -1069,7 +1069,7 @@ export const Constants = {
         "viuvo",
       ],
       owner_type: ["fisica", "juridica"],
-      property_condition: ["novo", "usado"],
+      property_condition: ["novo", "usado", "em_construcao"],
       property_purpose: ["venda", "locacao", "venda_locacao"],
       property_status: ["disponivel", "reservado", "vendido", "alugado"],
       property_type: [
