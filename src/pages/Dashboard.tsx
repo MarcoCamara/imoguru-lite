@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet, Settings, User } from 'lucide-react';
+import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet, Settings, User, LayoutGrid, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PropertyFilters from '@/components/PropertyFilters';
 import PropertyCard from '@/components/PropertyCard';
@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [propertyToShare, setPropertyToShare] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [systemSettings, setSystemSettings] = useState<any>({
     app_name: 'ImoGuru',
     logo_url: null,
@@ -500,31 +501,128 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-foreground">
                 {filteredProperties.length} imóve{filteredProperties.length === 1 ? 'l' : 'is'} encontrado{filteredProperties.length === 1 ? '' : 's'}
               </h2>
-              {selectedProperties.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedProperties([])}
-                >
-                  Limpar seleção
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center border rounded-lg">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="rounded-r-none"
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-2" />
+                    Cards
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="rounded-l-none"
+                  >
+                    <List className="h-4 w-4 mr-2" />
+                    Lista
+                  </Button>
+                </div>
+                {selectedProperties.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedProperties([])}
+                  >
+                    Limpar seleção
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProperties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  selected={selectedProperties.includes(property.id)}
-                  onSelect={handleSelectProperty}
-                  onEdit={() => navigate(`/property/${property.id}`)}
-                  onShare={() => handleShareSingle(property)}
-                  onDelete={() => handleDelete(property.id)}
-                  onArchive={() => handleArchive(property.id)}
-                  onDuplicate={() => handleDuplicate(property)}
-                />
-              ))}
-            </div>
+
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    selected={selectedProperties.includes(property.id)}
+                    onSelect={handleSelectProperty}
+                    onEdit={() => navigate(`/property/${property.id}`)}
+                    onShare={() => handleShareSingle(property)}
+                    onDelete={() => handleDelete(property.id)}
+                    onArchive={() => handleArchive(property.id)}
+                    onDuplicate={() => handleDuplicate(property)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredProperties.map((property) => {
+                  const coverImage = property.property_images?.find((img: any) => img.is_cover)?.url || 
+                                     property.property_images?.[0]?.url;
+                  const price = property.purpose === 'locacao' ? property.rental_price : property.sale_price;
+                  const purposeText = property.purpose === 'venda' ? 'Venda' : 
+                                     property.purpose === 'locacao' ? 'Locação' : 'Venda/Locação';
+
+                  return (
+                    <Card key={property.id} className="hover:shadow-lg transition-shadow">
+                      <div className="flex items-center gap-4 p-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedProperties.includes(property.id)}
+                          onChange={() => handleSelectProperty(property.id)}
+                          className="h-5 w-5 cursor-pointer"
+                        />
+                        
+                        {coverImage && (
+                          <img
+                            src={coverImage}
+                            alt={property.title}
+                            className="h-20 w-28 object-cover rounded"
+                          />
+                        )}
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg truncate">{property.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {property.code} • {property.city}, {property.state}
+                          </p>
+                          <p className="text-sm mt-1">
+                            {property.bedrooms} dorm • {property.bathrooms} banh • {property.parking_spaces} vagas
+                            {property.total_area && ` • ${property.total_area}m²`}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                            {purposeText}
+                          </span>
+                          {price && (
+                            <span className="font-bold text-lg whitespace-nowrap">
+                              R$ {price.toLocaleString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => navigate(`/property/${property.id}`)}
+                            title="Editar"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleShareSingle(property)}
+                            title="Compartilhar"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </main>
