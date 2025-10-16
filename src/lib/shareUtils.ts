@@ -12,14 +12,22 @@ export interface ShareTemplate {
   max_images: number;
 }
 
-export const formatPropertyValue = (key: string, value: any): string => {
-  if (!value) return '';
+export const formatPropertyValue = (key: string, value: any, property?: any): string => {
+  if (!value && key !== 'price') return '';
   
   switch (key) {
+    case 'price':
+      // Use sale_price or rental_price based on what's available
+      if (property?.sale_price) {
+        return `R$ ${Number(property.sale_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+      } else if (property?.rental_price) {
+        return `R$ ${Number(property.rental_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês`;
+      }
+      return '';
     case 'sale_price':
       return value ? `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '';
     case 'rental_price':
-      return value ? `Aluguel: R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : '';
+      return value ? `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : '';
     case 'iptu_price':
       return value ? `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/ano` : '';
     case 'condo_price':
@@ -32,8 +40,15 @@ export const formatPropertyValue = (key: string, value: any): string => {
     case 'bathrooms':
     case 'parking_spaces':
       return value ? String(value) : '0';
+    case 'title':
+    case 'property_type':
+    case 'purpose':
+    case 'city':
+    case 'neighborhood':
+    case 'description':
+      return value ? String(value) : '';
     default:
-      return String(value);
+      return value ? String(value) : '';
   }
 };
 
@@ -41,17 +56,18 @@ export const formatMessageWithTemplate = (template: ShareTemplate, property: any
   let message = template.message_format;
   
   template.fields.forEach(field => {
-    const placeholder = `{{${field}}}`;
-    const value = formatPropertyValue(field, property[field]);
-    message = message.replace(new RegExp(placeholder, 'g'), value);
+    const placeholder = `{${field}}`;
+    const value = formatPropertyValue(field, property[field], property);
+    message = message.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
   });
   
   // Remove empty lines and clean up
   message = message
     .split('\n')
-    .filter(line => !line.match(/^[\s]*{{.*}}[\s]*$/))
+    .filter(line => !line.match(/^[\s]*\{.*\}[\s]*$/))
     .join('\n')
-    .replace(/\n{3,}/g, '\n\n');
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   
   return message;
 };
@@ -89,32 +105,20 @@ export const getPropertyImages = (property: any, maxImages: number = 5): string[
 };
 
 export const shareToWhatsApp = async (message: string, images: string[]) => {
-  // Try Web Share API first (most reliable)
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        text: message,
-      });
-      return true;
-    } catch (error: any) {
-      // User cancelled or share failed, try fallback
-      if (error.name === 'AbortError') {
-        return false;
-      }
-    }
-  }
+  const encodedMessage = encodeURIComponent(message);
   
-  // Fallback 1: Copy to clipboard
-  try {
-    await navigator.clipboard.writeText(message);
-    return 'clipboard';
-  } catch (error) {
-    // Fallback 2: Use WhatsApp Web link (last resort)
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
-    return true;
-  }
+  // Detect if mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Use WhatsApp API directly
+  // On mobile: opens WhatsApp app
+  // On desktop: opens WhatsApp Web
+  const whatsappUrl = isMobile 
+    ? `whatsapp://send?text=${encodedMessage}`
+    : `https://web.whatsapp.com/send?text=${encodedMessage}`;
+  
+  window.open(whatsappUrl, '_blank');
+  return true;
 };
 
 export const shareToEmail = async (property: any, message: string, images: string[]) => {
