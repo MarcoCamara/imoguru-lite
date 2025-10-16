@@ -32,7 +32,7 @@ export default function Profile() {
     neighborhood: '',
     city: '',
     state: '',
-    company_id: '',
+    company_id: undefined as string | undefined,
   });
   const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
   const [userRole, setUserRole] = useState<string>('user');
@@ -75,7 +75,7 @@ export default function Profile() {
           neighborhood: profileData.data.neighborhood || '',
           city: profileData.data.city || '',
           state: profileData.data.state || '',
-          company_id: profileData.data.company_id || '',
+          company_id: profileData.data.company_id ?? undefined,
         });
       }
 
@@ -269,16 +269,15 @@ export default function Profile() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="company">Empresa</Label>
+                  <Label htmlFor="company">Empresa (opcional)</Label>
                   <Select
                     value={profile.company_id}
                     onValueChange={(value) => setProfile({ ...profile, company_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma empresa" />
+                      <SelectValue placeholder="Selecione uma empresa (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma</SelectItem>
                       {companies.map((company) => (
                         <SelectItem key={company.id} value={company.id}>
                           {company.name}
