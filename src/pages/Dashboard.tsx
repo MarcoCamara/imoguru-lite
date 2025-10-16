@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import PropertyFilters from '@/components/PropertyFilters';
 import PropertyCard from '@/components/PropertyCard';
 import DashboardMetrics from '@/components/DashboardMetrics';
+import PrintTemplate from '@/components/PrintTemplate';
 import { exportToCSV, exportToXLSX, exportToJSON } from '@/lib/exportUtils';
 import {
   DropdownMenu,
@@ -316,6 +317,11 @@ export default function Dashboard() {
                 Compartilhar
                 {selectedProperties.length > 0 && ` (${selectedProperties.length})`}
               </Button>
+              {selectedProperties.length > 0 && (
+                <PrintTemplate 
+                  properties={properties.filter(p => selectedProperties.includes(p.id))} 
+                />
+              )}
               <Button
                 onClick={() => navigate('/property/new')}
                 size="sm"
