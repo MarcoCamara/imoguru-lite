@@ -27,6 +27,7 @@ interface SystemSettings {
   logo_size_mobile?: number;
   logo_size_tablet?: number;
   logo_size_desktop?: number;
+  logo_size_login?: number;
   show_dashboard_metrics?: boolean;
   show_dashboard_charts?: boolean;
 }
@@ -48,6 +49,7 @@ export default function Settings() {
     logo_size_mobile: 40,
     logo_size_tablet: 48,
     logo_size_desktop: 56,
+    logo_size_login: 48,
     show_dashboard_metrics: true,
     show_dashboard_charts: true,
   });
@@ -324,7 +326,7 @@ export default function Settings() {
               </div>
               
               <div className="space-y-3">
-                <Label>Tamanho do Logo (pixels)</Label>
+                <Label>Tamanho do Logo no Dashboard (pixels)</Label>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="logo_size_mobile" className="text-xs text-muted-foreground">
@@ -367,7 +369,22 @@ export default function Settings() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ajuste o tamanho do logo para cada tipo de dispositivo
+                  Ajuste o tamanho do logo para cada tipo de dispositivo no dashboard
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="logo_size_login">Tamanho do Logo na Tela de Login (pixels)</Label>
+                <Input
+                  id="logo_size_login"
+                  type="number"
+                  min="24"
+                  max="120"
+                  value={settings.logo_size_login}
+                  onChange={(e) => setSettings({ ...settings, logo_size_login: parseInt(e.target.value) })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ajuste o tamanho do logo exibido na tela de login
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">

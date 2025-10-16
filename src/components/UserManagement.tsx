@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, User } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, KeyRound } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -173,6 +173,28 @@ export default function UserManagement() {
     }
   };
 
+  const handleResetPassword = async (userEmail: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email enviado',
+        description: `Email de recuperação de senha enviado para ${userEmail}`,
+      });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível enviar o email de recuperação.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return <div>Carregando usuários...</div>;
   }
@@ -320,6 +342,14 @@ export default function UserManagement() {
                       <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleResetPassword(user.email)}
+                    title="Resetar senha"
+                  >
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             ))}

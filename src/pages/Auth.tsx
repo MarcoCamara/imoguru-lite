@@ -1,17 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Eye, EyeOff } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function Auth() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [appName, setAppName] = useState('ImoGuru');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoSize, setLogoSize] = useState(48);
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -23,6 +37,33 @@ export default function Auth() {
     password: '',
     fullName: '',
   });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['app_name', 'logo_url', 'logo_size_login']);
+
+      if (error) throw error;
+
+      data?.forEach((item) => {
+        if (item.setting_key === 'app_name') {
+          setAppName(item.setting_value as string);
+        } else if (item.setting_key === 'logo_url') {
+          setLogoUrl(item.setting_value as string);
+        } else if (item.setting_key === 'logo_size_login') {
+          setLogoSize(item.setting_value as number);
+        }
+      });
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,12 +86,34 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetEmail) return;
+    
+    setIsLoading(true);
+    try {
+      await resetPassword(resetEmail);
+      setShowResetDialog(false);
+      setResetEmail('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          <Building2 className="h-12 w-12 text-primary mr-3" />
-          <h1 className="text-4xl font-bold text-foreground">ImoGuru</h1>
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={appName} 
+              style={{ height: `${logoSize}px`, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+              className="mr-3"
+            />
+          ) : (
+            <Building2 className="h-12 w-12 text-primary mr-3" />
+          )}
+          <h1 className="text-4xl font-bold text-foreground">{appName}</h1>
         </div>
 
         <Card>
@@ -113,6 +176,16 @@ export default function Auth() {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Entrando...' : 'Entrar'}
                   </Button>
+                  <div className="text-center mt-4">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm"
+                      onClick={() => setShowResetDialog(true)}
+                    >
+                      Esqueci minha senha
+                    </Button>
+                  </div>
                 </form>
               </TabsContent>
 
@@ -181,6 +254,37 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+
+        <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Recuperar Senha</DialogTitle>
+              <DialogDescription>
+                Digite seu email para receber um link de recuperação de senha
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowResetDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleResetPassword} disabled={isLoading || !resetEmail}>
+                {isLoading ? 'Enviando...' : 'Enviar Email'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
