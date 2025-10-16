@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
+import { PROPERTY_TYPES, PROPERTY_CATEGORIES } from '@/lib/propertyConstants';
 
 interface PropertyFiltersProps {
   properties: any[];
@@ -15,6 +16,7 @@ interface PropertyFiltersProps {
 export default function PropertyFilters({ properties, onFilterChange }: PropertyFiltersProps) {
   const [filters, setFilters] = useState({
     purpose: 'all',
+    propertyCategory: 'all',
     propertyType: 'all',
     status: 'all',
     condition: 'all',
@@ -52,6 +54,13 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
 
     if (filters.purpose !== 'all') {
       filtered = filtered.filter(p => p.purpose === filters.purpose || p.purpose === 'venda_locacao');
+    }
+
+    if (filters.propertyCategory !== 'all') {
+      filtered = filtered.filter(p => {
+        const propertyInfo = PROPERTY_TYPES.find(t => t.value === p.property_type);
+        return propertyInfo?.category === filters.propertyCategory;
+      });
     }
 
     if (filters.propertyType !== 'all') {
@@ -115,6 +124,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
   const resetFilters = () => {
     setFilters({
       purpose: 'all',
+      propertyCategory: 'all',
       propertyType: 'all',
       status: 'all',
       condition: 'all',
@@ -149,7 +159,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
         <div className="space-y-2">
           <Label>Finalidade</Label>
           <Select
@@ -168,6 +178,26 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </div>
 
         <div className="space-y-2">
+          <Label>Categoria</Label>
+          <Select
+            value={filters.propertyCategory}
+            onValueChange={(value) => {
+              setFilters({ ...filters, propertyCategory: value, propertyType: 'all' });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {PROPERTY_CATEGORIES.map(cat => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
           <Label>Tipo</Label>
           <Select
             value={filters.propertyType}
@@ -176,14 +206,20 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px]">
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="apartamento">Apartamento</SelectItem>
-              <SelectItem value="casa">Casa</SelectItem>
-              <SelectItem value="sobrado">Sobrado</SelectItem>
-              <SelectItem value="cobertura">Cobertura</SelectItem>
-              <SelectItem value="terreno">Terreno</SelectItem>
-              <SelectItem value="comercial">Comercial</SelectItem>
+              {filters.propertyCategory === 'all' 
+                ? PROPERTY_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))
+                : PROPERTY_TYPES.filter(t => t.category === filters.propertyCategory).map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))
+              }
             </SelectContent>
           </Select>
         </div>
@@ -220,7 +256,8 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
               <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="novo">Novo</SelectItem>
               <SelectItem value="usado">Usado</SelectItem>
-              <SelectItem value="lancamento">Lançamento</SelectItem>
+              <SelectItem value="em_construcao">Em Construção</SelectItem>
+              <SelectItem value="na_planta">Na Planta</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -191,8 +191,11 @@ export type Database = {
         Row: {
           accepts_exchange: boolean | null
           archived: boolean | null
+          available_for_partnership: boolean | null
           bathrooms: number | null
           bedrooms: number | null
+          capture_type: string | null
+          captured_by: string | null
           cep: string | null
           city: string | null
           code: string | null
@@ -239,6 +242,7 @@ export type Database = {
           owner_type: Database["public"]["Enums"]["owner_type"] | null
           owner_whatsapp: string | null
           parking_spaces: number | null
+          partnerships_notes: string | null
           property_features: string[] | null
           property_type: Database["public"]["Enums"]["property_type"]
           published: boolean | null
@@ -261,8 +265,11 @@ export type Database = {
         Insert: {
           accepts_exchange?: boolean | null
           archived?: boolean | null
+          available_for_partnership?: boolean | null
           bathrooms?: number | null
           bedrooms?: number | null
+          capture_type?: string | null
+          captured_by?: string | null
           cep?: string | null
           city?: string | null
           code?: string | null
@@ -309,6 +316,7 @@ export type Database = {
           owner_type?: Database["public"]["Enums"]["owner_type"] | null
           owner_whatsapp?: string | null
           parking_spaces?: number | null
+          partnerships_notes?: string | null
           property_features?: string[] | null
           property_type: Database["public"]["Enums"]["property_type"]
           published?: boolean | null
@@ -331,8 +339,11 @@ export type Database = {
         Update: {
           accepts_exchange?: boolean | null
           archived?: boolean | null
+          available_for_partnership?: boolean | null
           bathrooms?: number | null
           bedrooms?: number | null
+          capture_type?: string | null
+          captured_by?: string | null
           cep?: string | null
           city?: string | null
           code?: string | null
@@ -379,6 +390,7 @@ export type Database = {
           owner_type?: Database["public"]["Enums"]["owner_type"] | null
           owner_whatsapp?: string | null
           parking_spaces?: number | null
+          partnerships_notes?: string | null
           property_features?: string[] | null
           property_type?: Database["public"]["Enums"]["property_type"]
           published?: boolean | null
