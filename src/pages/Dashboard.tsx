@@ -184,7 +184,7 @@ export default function Dashboard() {
 
   const handleDuplicate = async (property: any) => {
     try {
-      const { id, created_at, updated_at, code, ...propertyData } = property;
+      const { id, created_at, updated_at, code, property_images, ...propertyData } = property;
       
       const { data, error } = await supabase
         .from('properties')
