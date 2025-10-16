@@ -24,7 +24,8 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
     minBedrooms: 0,
     minSuites: 0,
     minBathrooms: 0,
-    minParkingSpaces: 0,
+    minCoveredParking: 0,
+    minUncoveredParking: 0,
     minArea: 0,
     maxArea: 10000,
     minUsefulArea: 0,
@@ -89,7 +90,8 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
       p.bedrooms >= filters.minBedrooms &&
       (p.suites || 0) >= filters.minSuites &&
       p.bathrooms >= filters.minBathrooms &&
-      p.parking_spaces >= filters.minParkingSpaces &&
+      (p.covered_parking || 0) >= filters.minCoveredParking &&
+      (p.uncovered_parking || 0) >= filters.minUncoveredParking &&
       (p.total_area || 0) >= filters.minArea &&
       (p.total_area || 0) <= filters.maxArea &&
       (p.useful_area || 0) >= filters.minUsefulArea &&
@@ -122,7 +124,8 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
       minBedrooms: 0,
       minSuites: 0,
       minBathrooms: 0,
-      minParkingSpaces: 0,
+      minCoveredParking: 0,
+      minUncoveredParking: 0,
       minArea: 0,
       maxArea: 10000,
       minUsefulArea: 0,
@@ -242,7 +245,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="space-y-2">
           <Label>Dorm. (mín.)</Label>
           <Select
@@ -301,10 +304,10 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </div>
 
         <div className="space-y-2">
-          <Label>Vagas (mín.)</Label>
+          <Label>Vagas Cobertas (mín.)</Label>
           <Select
-            value={filters.minParkingSpaces.toString()}
-            onValueChange={(value) => setFilters({ ...filters, minParkingSpaces: parseInt(value) })}
+            value={filters.minCoveredParking.toString()}
+            onValueChange={(value) => setFilters({ ...filters, minCoveredParking: parseInt(value) })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -319,19 +322,27 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
           </Select>
         </div>
 
-        <div className="flex items-center space-x-2 pt-6">
-          <Checkbox
-            id="acceptsExchange"
-            checked={filters.acceptsExchange}
-            onCheckedChange={(checked) => setFilters({ ...filters, acceptsExchange: checked as boolean })}
-          />
-          <Label htmlFor="acceptsExchange" className="cursor-pointer">
-            Aceita Permuta
-          </Label>
+        <div className="space-y-2">
+          <Label>Vagas Descobertas (mín.)</Label>
+          <Select
+            value={filters.minUncoveredParking.toString()}
+            onValueChange={(value) => setFilters({ ...filters, minUncoveredParking: parseInt(value) })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[0, 1, 2, 3, 4, 5].map((n) => (
+                <SelectItem key={n} value={n.toString()}>
+                  {n === 0 ? 'Todos' : n}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label className="text-sm">Área Total (m²): {filters.minArea} - {filters.maxArea}</Label>
           <Slider
@@ -340,6 +351,17 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
             step={50}
             value={[filters.minArea, filters.maxArea]}
             onValueChange={([min, max]) => setFilters({ ...filters, minArea: min, maxArea: max })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm">Área Útil (m²): {filters.minUsefulArea} - {filters.maxUsefulArea}</Label>
+          <Slider
+            min={0}
+            max={10000}
+            step={50}
+            value={[filters.minUsefulArea, filters.maxUsefulArea]}
+            onValueChange={([min, max]) => setFilters({ ...filters, minUsefulArea: min, maxUsefulArea: max })}
           />
         </div>
 
@@ -368,17 +390,6 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-sm">Área Útil (m²): {filters.minUsefulArea} - {filters.maxUsefulArea}</Label>
-        <Slider
-          min={0}
-          max={10000}
-          step={50}
-          value={[filters.minUsefulArea, filters.maxUsefulArea]}
-          onValueChange={([min, max]) => setFilters({ ...filters, minUsefulArea: min, maxUsefulArea: max })}
-        />
-      </div>
-
       <div className="flex items-center gap-6">
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -399,6 +410,17 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
           />
           <Label htmlFor="publishedOnly" className="cursor-pointer">
             Apenas publicados
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="acceptsExchange"
+            checked={filters.acceptsExchange}
+            onCheckedChange={(checked) => setFilters({ ...filters, acceptsExchange: checked as boolean })}
+          />
+          <Label htmlFor="acceptsExchange" className="cursor-pointer">
+            Aceita Permuta
           </Label>
         </div>
       </div>
