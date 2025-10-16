@@ -22,6 +22,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
     condition: 'all',
     city: '',
     state: '',
+    condoName: '',
     showArchived: false,
     minBedrooms: 0,
     minSuites: 0,
@@ -87,6 +88,12 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
       );
     }
 
+    if (filters.condoName) {
+      filtered = filtered.filter(p => 
+        p.condo_name?.toLowerCase().includes(filters.condoName.toLowerCase())
+      );
+    }
+
     if (filters.acceptsExchange) {
       filtered = filtered.filter(p => p.accepts_exchange === true);
     }
@@ -130,6 +137,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
       condition: 'all',
       city: '',
       state: '',
+      condoName: '',
       showArchived: false,
       minBedrooms: 0,
       minSuites: 0,
@@ -159,7 +167,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3">
         <div className="space-y-2">
           <Label>Finalidade</Label>
           <Select
@@ -278,6 +286,15 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
             value={filters.state}
             maxLength={2}
             onChange={(e) => setFilters({ ...filters, state: e.target.value.toUpperCase() })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Condomínio/Edifício</Label>
+          <Input
+            placeholder="Nome do condomínio/edifício..."
+            value={filters.condoName}
+            onChange={(e) => setFilters({ ...filters, condoName: e.target.value })}
           />
         </div>
       </div>
