@@ -120,7 +120,9 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
           if (result === 'clipboard') {
             toast({
               title: `${platformConfig[platform].label}: Copiado!`,
-              description: 'Texto copiado para área de transferência. Cole no Instagram.',
+              description: platform === 'instagram' 
+                ? 'Texto copiado para área de transferência. Cole no Instagram.'
+                : 'Texto copiado! Abra o WhatsApp e cole a mensagem.',
             });
           } else {
             toast({

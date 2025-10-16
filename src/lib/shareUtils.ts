@@ -89,11 +89,32 @@ export const getPropertyImages = (property: any, maxImages: number = 5): string[
 };
 
 export const shareToWhatsApp = async (message: string, images: string[]) => {
-  const encodedMessage = encodeURIComponent(message);
-  const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+  // Try Web Share API first (most reliable)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        text: message,
+      });
+      return true;
+    } catch (error: any) {
+      // User cancelled or share failed, try fallback
+      if (error.name === 'AbortError') {
+        return false;
+      }
+    }
+  }
   
-  window.open(whatsappUrl, '_blank');
-  return true;
+  // Fallback 1: Copy to clipboard
+  try {
+    await navigator.clipboard.writeText(message);
+    return 'clipboard';
+  } catch (error) {
+    // Fallback 2: Use WhatsApp Web link (last resort)
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+    return true;
+  }
 };
 
 export const shareToEmail = async (property: any, message: string, images: string[]) => {
