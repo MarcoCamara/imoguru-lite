@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageCircle, Mail, Facebook, Instagram, Send } from 'lucide-react';
+import { Loader2, MessageCircle, Mail, Facebook, Instagram, Send, Link2, Eye, Check, Globe } from 'lucide-react';
 import {
   type SharePlatform,
   getShareTemplates,
@@ -23,7 +23,15 @@ import {
   shareToFacebook,
   shareToInstagram,
   trackShare,
+  canUseWebShare,
+  shareViaWebShare,
+  copyToClipboard,
 } from '@/lib/shareUtils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface ShareDialogProps {
   open: boolean;
@@ -32,11 +40,36 @@ interface ShareDialogProps {
 }
 
 const platformConfig = {
-  whatsapp: { icon: MessageCircle, label: 'WhatsApp', color: 'text-green-600' },
-  email: { icon: Mail, label: 'Email', color: 'text-blue-600' },
-  messenger: { icon: Send, label: 'Messenger', color: 'text-blue-500' },
-  facebook: { icon: Facebook, label: 'Facebook', color: 'text-blue-700' },
-  instagram: { icon: Instagram, label: 'Instagram', color: 'text-pink-600' },
+  whatsapp: { 
+    icon: MessageCircle, 
+    label: 'WhatsApp', 
+    color: 'text-green-600',
+    instruction: 'Abrirá WhatsApp Web (desktop) ou app (mobile)'
+  },
+  email: { 
+    icon: Mail, 
+    label: 'Email', 
+    color: 'text-blue-600',
+    instruction: 'Digite o email do destinatário para enviar'
+  },
+  messenger: { 
+    icon: Send, 
+    label: 'Messenger', 
+    color: 'text-blue-500',
+    instruction: 'Texto copiado! Abra o Messenger e cole'
+  },
+  facebook: { 
+    icon: Facebook, 
+    label: 'Facebook', 
+    color: 'text-blue-700',
+    instruction: 'Texto copiado! Cole ao criar post no Facebook'
+  },
+  instagram: { 
+    icon: Instagram, 
+    label: 'Instagram', 
+    color: 'text-pink-600',
+    instruction: 'Texto copiado! Cole na legenda ao criar post'
+  },
 };
 
 export default function ShareDialog({ open, onOpenChange, property }: ShareDialogProps) {
@@ -46,6 +79,8 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
   const [loading, setLoading] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [systemSettings, setSystemSettings] = useState<any>({ app_name: 'ImoGuru', logo_url: null });
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewMessage, setPreviewMessage] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -96,6 +131,63 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
     );
   };
 
+  const handleCopyLink = async () => {
+    const propertyUrl = `${window.location.origin}/property/${property.id}`;
+    const success = await copyToClipboard(propertyUrl);
+    
+    if (success) {
+      toast({
+        title: '✅ Link copiado!',
+        description: 'O link do imóvel foi copiado para área de transferência.',
+        duration: 5000,
+      });
+    } else {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível copiar o link.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handlePreview = async () => {
+    if (selectedPlatforms.length === 0) {
+      toast({
+        title: 'Selecione uma plataforma',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const template = templates.find(t => t.platform === selectedPlatforms[0]);
+    if (template) {
+      const message = await formatMessageWithTemplate(template, property);
+      setPreviewMessage(message);
+      setShowPreview(true);
+    }
+  };
+
+  const handleWebShare = async () => {
+    const propertyUrl = `${window.location.origin}/property/${property.id}`;
+    const template = templates.find(t => t.platform === 'whatsapp');
+    const message = template ? await formatMessageWithTemplate(template, property) : '';
+    
+    const success = await shareViaWebShare(
+      `Imóvel - ${property.title || property.property_type}`,
+      message,
+      propertyUrl
+    );
+
+    if (success) {
+      await trackShare(property.id, 'whatsapp');
+      toast({
+        title: '✅ Compartilhado com sucesso!',
+        duration: 3000,
+      });
+      onOpenChange(false);
+    }
+  };
+
   const handleShare = async () => {
     if (selectedPlatforms.length === 0) {
       toast({
@@ -140,13 +232,15 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
           
           if (result === 'clipboard') {
             toast({
-              title: `${platformConfig[platform].label}: Copiado!`,
-              description: 'Texto copiado para área de transferência. Cole no Instagram.',
+              title: `✅ ${platformConfig[platform].label}`,
+              description: platformConfig[platform].instruction,
+              duration: 7000,
             });
           } else {
             toast({
-              title: `Compartilhado via ${platformConfig[platform].label}!`,
-              description: platform === 'whatsapp' ? 'Selecione os contatos para enviar.' : undefined,
+              title: `✅ ${platformConfig[platform].label}`,
+              description: platformConfig[platform].instruction,
+              duration: 5000,
             });
           }
         }
@@ -166,7 +260,7 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Compartilhar Imóvel</DialogTitle>
           <DialogDescription>
@@ -180,7 +274,46 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
           </div>
         ) : (
           <>
-            <div className="space-y-4">
+            {/* Web Share API Button (if available) */}
+            {canUseWebShare() && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <Button 
+                  onClick={handleWebShare} 
+                  className="w-full"
+                  size="lg"
+                >
+                  <Globe className="mr-2 h-5 w-5" />
+                  Compartilhar via Sistema
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Escolha o app de preferência no seu dispositivo
+                </p>
+              </div>
+            )}
+
+            {/* Copy Link Button */}
+            <Button 
+              onClick={handleCopyLink} 
+              variant="outline" 
+              className="w-full"
+              size="lg"
+            >
+              <Link2 className="mr-2 h-5 w-5" />
+              Copiar Link do Imóvel
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Ou compartilhe diretamente
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
               {Object.entries(platformConfig).map(([platform, config]) => {
                 const Icon = config.icon;
                 const template = templates.find(t => t.platform === platform);
@@ -188,30 +321,101 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
                 if (!template) return null;
 
                 return (
-                  <div key={platform} className="flex items-center space-x-3">
-                    <Checkbox
-                      id={platform}
-                      checked={selectedPlatforms.includes(platform as SharePlatform)}
-                      onCheckedChange={() => togglePlatform(platform as SharePlatform)}
-                    />
-                    <Label
-                      htmlFor={platform}
-                      className="flex items-center gap-2 cursor-pointer flex-1"
-                    >
-                      <Icon className={`h-5 w-5 ${config.color}`} />
-                      <span className="font-medium">{config.label}</span>
-                    </Label>
+                  <div key={platform} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id={platform}
+                        checked={selectedPlatforms.includes(platform as SharePlatform)}
+                        onCheckedChange={() => togglePlatform(platform as SharePlatform)}
+                      />
+                      <Label
+                        htmlFor={platform}
+                        className="flex items-center gap-2 cursor-pointer flex-1"
+                      >
+                        <Icon className={`h-5 w-5 ${config.color}`} />
+                        <div className="flex-1">
+                          <div className="font-medium">{config.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {config.instruction}
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {selectedPlatforms.includes('instagram') && (
-              <div className="bg-muted/50 p-3 rounded-md text-sm text-muted-foreground">
-                <strong>Instagram:</strong> O texto será copiado para a área de transferência.
-                Cole-o ao criar um novo post.
-              </div>
-            )}
+            {/* Message Preview */}
+            <Collapsible open={showPreview} onOpenChange={setShowPreview}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={handlePreview}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  {showPreview ? 'Ocultar Preview' : 'Ver Preview da Mensagem'}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="bg-muted p-4 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
+                  {previewMessage || 'Selecione uma plataforma para ver o preview'}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <div className="flex gap-2 justify-end pt-4">
+              {Object.entries(platformConfig).map(([platform, config]) => {
+                const Icon = config.icon;
+                const template = templates.find(t => t.platform === platform);
+                
+                if (!template) return null;
+
+                return (
+                  <div key={platform} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id={platform}
+                        checked={selectedPlatforms.includes(platform as SharePlatform)}
+                        onCheckedChange={() => togglePlatform(platform as SharePlatform)}
+                      />
+                      <Label
+                        htmlFor={platform}
+                        className="flex items-center gap-2 cursor-pointer flex-1"
+                      >
+                        <Icon className={`h-5 w-5 ${config.color}`} />
+                        <div className="flex-1">
+                          <div className="font-medium">{config.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {config.instruction}
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Message Preview */}
+            <Collapsible open={showPreview} onOpenChange={setShowPreview}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={handlePreview}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  {showPreview ? 'Ocultar Preview' : 'Ver Preview da Mensagem'}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="bg-muted p-4 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
+                  {previewMessage || 'Selecione uma plataforma para ver o preview'}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             <div className="flex gap-2 justify-end pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>

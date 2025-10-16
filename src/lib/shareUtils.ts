@@ -12,6 +12,44 @@ export interface ShareTemplate {
   max_images: number;
 }
 
+// Check if Web Share API is available
+export const canUseWebShare = (): boolean => {
+  return typeof navigator !== 'undefined' && 'share' in navigator;
+};
+
+// Share via native Web Share API
+export const shareViaWebShare = async (title: string, text: string, url: string): Promise<boolean> => {
+  if (!canUseWebShare()) {
+    return false;
+  }
+
+  try {
+    await navigator.share({
+      title,
+      text,
+      url,
+    });
+    return true;
+  } catch (error: any) {
+    // User cancelled or error occurred
+    if (error.name !== 'AbortError') {
+      console.error('Error sharing via Web Share API:', error);
+    }
+    return false;
+  }
+};
+
+// Copy text to clipboard
+export const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    console.error('Error copying to clipboard:', error);
+    return false;
+  }
+};
+
 export const formatPropertyValue = (key: string, value: any, property?: any): string => {
   if (!value && key !== 'price') return '';
   
@@ -66,12 +104,18 @@ export const formatMessageWithTemplate = async (template: ShareTemplate, propert
     settings[item.setting_key] = item.setting_value;
   });
 
+  // Get property URL
+  const propertyUrl = `${window.location.origin}/property/${property.id}`;
+  const currentDate = new Date().toLocaleDateString('pt-BR');
+
   // Normalize double-brace placeholders to single-brace to simplify replacement
   message = message.replace(/\{\{\s*(\w+)\s*\}\}/g, '{$1}');
   
   // Replace system variables
   message = message.replace(/\{app_name\}/g, settings.app_name);
   message = message.replace(/\{logo_url\}/g, settings.logo_url || '');
+  message = message.replace(/\{property_url\}/g, propertyUrl);
+  message = message.replace(/\{current_date\}/g, currentDate);
   
   // Replace property fields
   template.fields.forEach((field) => {
@@ -130,18 +174,10 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   if (isMobile) {
-    // No mobile, perguntar se tem WhatsApp Business
-    const useWhatsAppBusiness = confirm('Você possui WhatsApp Business instalado? Clique em OK para usar o WhatsApp Business ou Cancelar para usar o WhatsApp comum.');
-    
-    if (useWhatsAppBusiness) {
-      // Tentar abrir WhatsApp Business primeiro
-      window.location.href = `https://wa.me/?text=${encodedMessage}`;
-    } else {
-      // Abrir WhatsApp comum
-      window.location.href = `whatsapp://send?text=${encodedMessage}`;
-    }
+    // Try WhatsApp app
+    window.location.href = `whatsapp://send?text=${encodedMessage}`;
   } else {
-    // No desktop, sempre usar WhatsApp Web
+    // Desktop: use WhatsApp Web
     window.open(`https://web.whatsapp.com/send?text=${encodedMessage}`, '_blank');
   }
   
@@ -204,23 +240,14 @@ export const shareToEmail = async (property: any, message: string, images: strin
 export const shareToMessenger = async (message: string) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // Copiar mensagem para área de transferência
-  try {
-    await navigator.clipboard.writeText(message);
-  } catch (error) {
-    console.error('Error copying to clipboard:', error);
-  }
+  // Copy message to clipboard
+  await copyToClipboard(message);
   
   if (isMobile) {
-    // Abrir Messenger app no mobile
+    // Open Messenger app
     window.location.href = `fb-messenger://`;
-    
-    // Fallback para web após 2 segundos se o app não abrir
-    setTimeout(() => {
-      window.open('https://www.messenger.com/', '_blank');
-    }, 2000);
   } else {
-    // Abrir Messenger web no desktop
+    // Desktop: open Messenger web
     window.open('https://www.messenger.com/', '_blank');
   }
   
@@ -230,29 +257,15 @@ export const shareToMessenger = async (message: string) => {
 export const shareToFacebook = async (message: string, images: string[]) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // Copiar mensagem para área de transferência
-  try {
-    await navigator.clipboard.writeText(message);
-  } catch (error) {
-    console.error('Error copying to clipboard:', error);
-  }
-  
-  const propertyUrl = encodeURIComponent(window.location.href);
-  const encodedMessage = encodeURIComponent(message);
+  // Copy message to clipboard
+  await copyToClipboard(message);
   
   if (isMobile) {
-    // Tentar abrir o app do Facebook no mobile
-    const fbAppUrl = `fb://facewebmodal/f?href=${encodeURIComponent(`https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}`)}`;
-    window.location.href = fbAppUrl;
-    
-    // Fallback para web após 2 segundos se o app não abrir
-    setTimeout(() => {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}&quote=${encodedMessage}`, '_blank');
-    }, 2000);
+    // Try to open Facebook app
+    window.location.href = 'fb://';
   } else {
-    // No desktop, abrir janela de compartilhamento do Facebook
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}&quote=${encodedMessage}`;
-    window.open(facebookUrl, '_blank', 'width=600,height=400');
+    // Desktop: open Facebook
+    window.open('https://www.facebook.com/', '_blank');
   }
   
   return true;
@@ -261,24 +274,14 @@ export const shareToFacebook = async (message: string, images: string[]) => {
 export const shareToInstagram = async (message: string) => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // Copiar mensagem para área de transferência
-  try {
-    await navigator.clipboard.writeText(message);
-  } catch (error) {
-    console.error('Error copying to clipboard:', error);
-    return false;
-  }
+  // Copy message to clipboard
+  await copyToClipboard(message);
   
   if (isMobile) {
-    // Tentar abrir o Instagram app no mobile
+    // Try to open Instagram app
     window.location.href = 'instagram://';
-    
-    // Fallback para web após 1 segundo se o app não abrir
-    setTimeout(() => {
-      window.open('https://www.instagram.com/', '_blank');
-    }, 1000);
   } else {
-    // No desktop, abrir Instagram web
+    // Desktop: open Instagram web
     window.open('https://www.instagram.com/', '_blank');
   }
   
