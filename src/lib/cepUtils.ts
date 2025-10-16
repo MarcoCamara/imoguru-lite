@@ -7,6 +7,14 @@ export interface CEPData {
   neighborhood: string;
   street: string;
   service: string;
+  uf?: string;
+  localidade?: string;
+  bairro?: string;
+  logradouro?: string;
+}
+
+export async function searchCep(cep: string): Promise<CEPData | null> {
+  return fetchCEP(cep);
 }
 
 export async function fetchCEP(cep: string): Promise<CEPData | null> {
@@ -32,7 +40,11 @@ export async function fetchCEP(cep: string): Promise<CEPData | null> {
       city: data.city,
       neighborhood: data.neighborhood,
       street: data.street,
-      service: data.service
+      service: data.service,
+      uf: data.state,
+      localidade: data.city,
+      bairro: data.neighborhood,
+      logradouro: data.street
     };
   } catch (error) {
     console.error('Erro ao buscar CEP:', error);

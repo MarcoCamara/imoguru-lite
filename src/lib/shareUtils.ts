@@ -97,7 +97,7 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
 };
 
 export const shareToEmail = async (property: any, message: string, images: string[]) => {
-  const subject = encodeURIComponent(`Imóvel: ${property.title}`);
+  const subject = encodeURIComponent(`Imóvel: ${property.title || 'Sem título'}`);
   const body = encodeURIComponent(message);
   const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
   

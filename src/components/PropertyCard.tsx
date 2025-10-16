@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bed, Bath, Car, Ruler, MapPin, Edit, Share2, Trash2, Archive } from 'lucide-react';
+import { Bed, Bath, Car, Ruler, MapPin, Edit, Share2, Trash2, Archive, Copy } from 'lucide-react';
 
 interface PropertyCardProps {
   property: any;
@@ -12,6 +12,7 @@ interface PropertyCardProps {
   onShare: () => void;
   onDelete: () => void;
   onArchive: () => void;
+  onDuplicate?: () => void;
 }
 
 export default function PropertyCard({
@@ -22,6 +23,7 @@ export default function PropertyCard({
   onShare,
   onDelete,
   onArchive,
+  onDuplicate,
 }: PropertyCardProps) {
   const coverImage = property.property_images?.find((img: any) => img.is_cover)?.url ||
     property.property_images?.[0]?.url;
@@ -133,6 +135,11 @@ export default function PropertyCard({
             <Edit className="h-4 w-4 mr-2" />
             Editar
           </Button>
+          {onDuplicate && (
+            <Button variant="outline" size="sm" onClick={onDuplicate} title="Duplicar">
+              <Copy className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onArchive} title="Arquivar">
             <Archive className="h-4 w-4" />
           </Button>

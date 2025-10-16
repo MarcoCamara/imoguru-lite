@@ -4,10 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet } from 'lucide-react';
+import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet, Settings, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PropertyFilters from '@/components/PropertyFilters';
 import PropertyCard from '@/components/PropertyCard';
+import DashboardMetrics from '@/components/DashboardMetrics';
 import { exportToCSV, exportToXLSX, exportToJSON } from '@/lib/exportUtils';
 import {
   DropdownMenu,
@@ -52,9 +53,11 @@ export default function Dashboard() {
           property_images (
             id,
             url,
-            is_cover
+            is_cover,
+            display_order
           )
         `)
+        .eq('archived', false)
         .order('created_at', { ascending: false });
 
       if (!isAdmin) {
@@ -152,7 +155,7 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (propertyId: string) => {
-    if (!confirm('Tem certeza que deseja deletar este imóvel? Esta ação não pode ser desfeita.')) {
+    if (!confirm('Tem certeza que deseja deletar este imóvel permanentemente? Esta ação não pode ser desfeita.')) {
       return;
     }
 
@@ -166,13 +169,56 @@ export default function Dashboard() {
 
       toast({
         title: 'Imóvel deletado!',
-        description: 'O imóvel foi removido com sucesso.',
+        description: 'O imóvel foi removido permanentemente.',
       });
 
       fetchProperties();
     } catch (error: any) {
       toast({
         title: 'Erro ao deletar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDuplicate = async (property: any) => {
+    try {
+      const { id, created_at, updated_at, code, ...propertyData } = property;
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .insert({
+          ...propertyData,
+          title: `${propertyData.title} (Cópia)`,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Copy images
+      if (property.property_images && property.property_images.length > 0) {
+        const imagesToCopy = property.property_images.map((img: any) => ({
+          property_id: data.id,
+          url: img.url,
+          is_cover: img.is_cover,
+          display_order: img.display_order,
+          caption: img.caption,
+        }));
+
+        await supabase.from('property_images').insert(imagesToCopy);
+      }
+
+      toast({
+        title: 'Imóvel duplicado!',
+        description: 'Uma cópia do imóvel foi criada com sucesso.',
+      });
+
+      fetchProperties();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao duplicar',
         description: error.message,
         variant: 'destructive',
       });
@@ -227,7 +273,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <Building2 className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Imóvel Mate</h1>
+                <h1 className="text-2xl font-bold text-foreground">ImoGuru</h1>
                 <p className="text-sm text-muted-foreground">
                   {isAdmin ? 'Administrador' : 'Meus Imóveis'}
                 </p>
@@ -278,6 +324,24 @@ export default function Dashboard() {
                 Novo Imóvel
               </Button>
               <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/profile')}
+                title="Meu Perfil"
+              >
+                <User className="h-4 w-4" />
+              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigate('/settings')}
+                  title="Configurações"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={signOut}
@@ -291,6 +355,8 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <DashboardMetrics />
+        
         {showFilters && (
           <Card className="mb-6 p-6">
             <PropertyFilters
@@ -348,6 +414,7 @@ export default function Dashboard() {
                   onShare={() => handleShareSingle(property)}
                   onDelete={() => handleDelete(property.id)}
                   onArchive={() => handleArchive(property.id)}
+                  onDuplicate={() => handleDuplicate(property)}
                 />
               ))}
             </div>
