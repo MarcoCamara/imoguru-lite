@@ -59,6 +59,30 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       nearby_points: {
         Row: {
           category: string | null
@@ -125,6 +149,7 @@ export type Database = {
         Row: {
           cep: string | null
           city: string | null
+          company_id: string | null
           complement: string | null
           cpf_cnpj: string | null
           created_at: string | null
@@ -146,6 +171,7 @@ export type Database = {
         Insert: {
           cep?: string | null
           city?: string | null
+          company_id?: string | null
           complement?: string | null
           cpf_cnpj?: string | null
           created_at?: string | null
@@ -167,6 +193,7 @@ export type Database = {
         Update: {
           cep?: string | null
           city?: string | null
+          company_id?: string | null
           complement?: string | null
           cpf_cnpj?: string | null
           created_at?: string | null
@@ -185,7 +212,15 @@ export type Database = {
           updated_at?: string | null
           user_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -199,6 +234,7 @@ export type Database = {
           cep: string | null
           city: string | null
           code: string | null
+          company_id: string | null
           complement: string | null
           condition: Database["public"]["Enums"]["property_condition"]
           condo_amenities: string[] | null
@@ -273,6 +309,7 @@ export type Database = {
           cep?: string | null
           city?: string | null
           code?: string | null
+          company_id?: string | null
           complement?: string | null
           condition: Database["public"]["Enums"]["property_condition"]
           condo_amenities?: string[] | null
@@ -347,6 +384,7 @@ export type Database = {
           cep?: string | null
           city?: string | null
           code?: string | null
+          company_id?: string | null
           complement?: string | null
           condition?: Database["public"]["Enums"]["property_condition"]
           condo_amenities?: string[] | null
@@ -410,7 +448,15 @@ export type Database = {
           useful_area?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_amenities: {
         Row: {

@@ -32,7 +32,10 @@ export default function Profile() {
     neighborhood: '',
     city: '',
     state: '',
+    company_id: '',
   });
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
+  const [userRole, setUserRole] = useState<string>('user');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -47,32 +50,41 @@ export default function Profile() {
 
   const loadProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
+      const [profileData, companiesData, roleData] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user?.id).single(),
+        supabase.from('companies').select('id, name').order('name'),
+        supabase.from('user_roles').select('role').eq('user_id', user?.id).maybeSingle(),
+      ]);
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (profileData.error && profileData.error.code !== 'PGRST116') throw profileData.error;
 
-      if (data) {
+      if (profileData.data) {
         setProfile({
-          full_name: data.full_name || '',
-          email: data.email || user?.email || '',
-          phone: data.phone || '',
-          person_type: data.person_type || 'fisica',
-          cpf_cnpj: data.cpf_cnpj || '',
-          rg: data.rg || '',
-          creci: data.creci || '',
-          user_type: data.user_type || '',
-          cep: data.cep || '',
-          street: data.street || '',
-          number: data.number || '',
-          complement: data.complement || '',
-          neighborhood: data.neighborhood || '',
-          city: data.city || '',
-          state: data.state || '',
+          full_name: profileData.data.full_name || '',
+          email: profileData.data.email || user?.email || '',
+          phone: profileData.data.phone || '',
+          person_type: profileData.data.person_type || 'fisica',
+          cpf_cnpj: profileData.data.cpf_cnpj || '',
+          rg: profileData.data.rg || '',
+          creci: profileData.data.creci || '',
+          user_type: profileData.data.user_type || '',
+          cep: profileData.data.cep || '',
+          street: profileData.data.street || '',
+          number: profileData.data.number || '',
+          complement: profileData.data.complement || '',
+          neighborhood: profileData.data.neighborhood || '',
+          city: profileData.data.city || '',
+          state: profileData.data.state || '',
+          company_id: profileData.data.company_id || '',
         });
+      }
+
+      if (companiesData.data) {
+        setCompanies(companiesData.data);
+      }
+
+      if (roleData.data) {
+        setUserRole(roleData.data.role);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -88,14 +100,30 @@ export default function Profile() {
 
   const handleCepSearch = async () => {
     if (profile.cep.length === 8) {
+      toast({
+        title: 'Buscando CEP...',
+        description: 'Aguarde enquanto buscamos o endereço.',
+      });
+      
       const result = await searchCep(profile.cep);
       if (result) {
         setProfile({
           ...profile,
-          street: result.logradouro,
-          neighborhood: result.bairro,
-          city: result.localidade,
-          state: result.uf,
+          street: result.logradouro || result.street,
+          neighborhood: result.bairro || result.neighborhood,
+          city: result.localidade || result.city,
+          state: result.uf || result.state,
+        });
+        
+        toast({
+          title: 'CEP encontrado!',
+          description: 'Endereço preenchido automaticamente.',
+        });
+      } else {
+        toast({
+          title: 'CEP não encontrado',
+          description: 'Preencha o endereço manualmente.',
+          variant: 'destructive',
         });
       }
     }
@@ -240,6 +268,37 @@ export default function Profile() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label htmlFor="company">Empresa</Label>
+                  <Select
+                    value={profile.company_id}
+                    onValueChange={(value) => setProfile({ ...profile, company_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma empresa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhuma</SelectItem>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="role">Nível de Acesso</Label>
+                  <Input
+                    id="role"
+                    value={userRole === 'admin' ? 'Administrador' : 'Usuário'}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Apenas administradores podem alterar níveis de acesso
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -253,14 +312,22 @@ export default function Profile() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="cep">CEP</Label>
-                  <Input
-                    id="cep"
-                    value={profile.cep}
-                    onChange={(e) => setProfile({ ...profile, cep: e.target.value.replace(/\D/g, '') })}
-                    onBlur={handleCepSearch}
-                    placeholder="00000-000"
-                    maxLength={8}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="cep"
+                      value={profile.cep}
+                      onChange={(e) => setProfile({ ...profile, cep: e.target.value.replace(/\D/g, '') })}
+                      placeholder="00000-000"
+                      maxLength={8}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCepSearch}
+                    >
+                      Buscar
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

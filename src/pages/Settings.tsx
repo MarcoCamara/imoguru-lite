@@ -9,7 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BrandingPreview from '@/components/BrandingPreview';
+import CompanyManagement from '@/components/CompanyManagement';
+import UserManagement from '@/components/UserManagement';
 
 interface SystemSettings {
   app_name: string;
@@ -243,7 +246,14 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <Tabs defaultValue="system" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="system">Sistema</TabsTrigger>
+            <TabsTrigger value="companies">Empresas</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="system" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Branding</CardTitle>
@@ -542,12 +552,21 @@ export default function Settings() {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || uploading}>
               <Save className="h-4 w-4 mr-2" />
               {saving ? 'Salvando...' : 'Salvar Configurações'}
             </Button>
           </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="companies" className="space-y-6">
+            <CompanyManagement />
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            <UserManagement />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
