@@ -187,11 +187,16 @@ export default function Dashboard() {
     try {
       const { id, created_at, updated_at, code, property_images, ...propertyData } = property;
       
+      // Gerar novo código sequencial para a cópia
+      const { data: newCode, error: codeError } = await supabase.rpc('generate_property_code');
+      if (codeError) throw codeError;
+      
       const { data, error } = await supabase
         .from('properties')
         .insert({
           ...propertyData,
           title: `${propertyData.title} (Cópia)`,
+          code: newCode,
         })
         .select()
         .single();

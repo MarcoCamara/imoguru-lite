@@ -116,7 +116,7 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
   // On desktop: opens WhatsApp via universal API (redirects to Web/App)
   const whatsappUrl = isMobile 
     ? `whatsapp://send?text=${encodedMessage}`
-    : `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    : `https://web.whatsapp.com/send?text=${encodedMessage}`;
   
   window.open(whatsappUrl, '_blank');
   return true;
