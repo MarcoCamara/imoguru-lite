@@ -91,7 +91,7 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
         const template = templates.find(t => t.platform === platform);
         if (!template) continue;
 
-        const message = formatMessageWithTemplate(template, property);
+        const message = await formatMessageWithTemplate(template, property);
         const images = getPropertyImages(property, template.max_images);
 
         let result: any = false;

@@ -52,12 +52,28 @@ export const formatPropertyValue = (key: string, value: any, property?: any): st
   }
 };
 
-export const formatMessageWithTemplate = (template: ShareTemplate, property: any): string => {
+export const formatMessageWithTemplate = async (template: ShareTemplate, property: any): Promise<string> => {
   let message = template.message_format || '';
+
+  // Load system settings
+  const { data: systemSettings } = await supabase
+    .from('system_settings')
+    .select('setting_key, setting_value')
+    .in('setting_key', ['app_name', 'logo_url']);
+  
+  const settings: any = { app_name: 'ImoGuru', logo_url: '' };
+  systemSettings?.forEach((item) => {
+    settings[item.setting_key] = item.setting_value;
+  });
 
   // Normalize double-brace placeholders to single-brace to simplify replacement
   message = message.replace(/\{\{\s*(\w+)\s*\}\}/g, '{$1}');
   
+  // Replace system variables
+  message = message.replace(/\{app_name\}/g, settings.app_name);
+  message = message.replace(/\{logo_url\}/g, settings.logo_url || '');
+  
+  // Replace property fields
   template.fields.forEach((field) => {
     const re = new RegExp(`\\{${field}\\}`, 'g');
     const value = formatPropertyValue(field, property[field], property);

@@ -410,6 +410,8 @@ export default function Settings() {
             appName={settings.app_name}
             primaryColor={settings.primary_color}
             secondaryColor={settings.secondary_color}
+            logoUrl={settings.logo_url}
+            faviconUrl={settings.favicon_url}
           />
 
           <Card>

@@ -5,9 +5,11 @@ interface BrandingPreviewProps {
   appName: string;
   primaryColor: string;
   secondaryColor: string;
+  logoUrl?: string;
+  faviconUrl?: string;
 }
 
-export default function BrandingPreview({ appName, primaryColor, secondaryColor }: BrandingPreviewProps) {
+export default function BrandingPreview({ appName, primaryColor, secondaryColor, logoUrl, faviconUrl }: BrandingPreviewProps) {
   return (
     <Card>
       <CardHeader>
@@ -18,14 +20,23 @@ export default function BrandingPreview({ appName, primaryColor, secondaryColor 
         <div className="border rounded-lg p-6 bg-white">
           <div className="flex items-center gap-3 mb-4">
             <div 
-              className="h-12 w-12 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: primaryColor }}
+              className="h-12 w-12 rounded-lg flex items-center justify-center overflow-hidden"
+              style={{ backgroundColor: logoUrl ? 'transparent' : primaryColor }}
             >
-              <Building2 className="h-6 w-6 text-white" />
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <Building2 className="h-6 w-6 text-white" />
+              )}
             </div>
             <h2 className="text-2xl font-bold" style={{ color: primaryColor }}>
               {appName || 'ImoGuru'}
             </h2>
+            {faviconUrl && (
+              <div className="ml-auto h-8 w-8 rounded flex items-center justify-center overflow-hidden border">
+                <img src={faviconUrl} alt="Favicon" className="w-full h-full object-contain" />
+              </div>
+            )}
           </div>
           
           <div className="space-y-3">
@@ -53,7 +64,7 @@ export default function BrandingPreview({ appName, primaryColor, secondaryColor 
 
         <div className="text-sm text-muted-foreground space-y-2">
           <p>• As cores serão aplicadas automaticamente em todo o sistema</p>
-          <p>• Logo e favicon podem ser customizados em breve</p>
+          <p>• Logo e favicon podem ser customizados via upload acima</p>
           <p>• Salve as configurações para aplicar as mudanças</p>
         </div>
       </CardContent>

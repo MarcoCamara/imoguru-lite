@@ -30,6 +30,10 @@ export default function Dashboard() {
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [propertyToShare, setPropertyToShare] = useState<any>(null);
+  const [systemSettings, setSystemSettings] = useState<any>({
+    app_name: 'ImoGuru',
+    logo_url: null,
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,8 +44,29 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchProperties();
+      fetchSystemSettings();
     }
   }, [user, isAdmin]);
+
+  const fetchSystemSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['app_name', 'logo_url']);
+
+      if (error) throw error;
+
+      const settingsObj: any = { app_name: 'ImoGuru', logo_url: null };
+      data?.forEach((item) => {
+        settingsObj[item.setting_key] = item.setting_value;
+      });
+
+      setSystemSettings(settingsObj);
+    } catch (error) {
+      console.error('Error loading system settings:', error);
+    }
+  };
 
   const fetchProperties = async () => {
     try {
@@ -277,9 +302,21 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-primary" />
+              {systemSettings.logo_url ? (
+                <div className="h-10 w-10 rounded-lg overflow-hidden">
+                  <img 
+                    src={systemSettings.logo_url} 
+                    alt={systemSettings.app_name} 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <Building2 className="h-8 w-8 text-primary" />
+              )}
               <div>
-                <h1 className="text-2xl font-bold text-foreground">ImoGuru</h1>
+                <h1 className="text-2xl font-bold text-foreground">
+                  {systemSettings.app_name}
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   {isAdmin ? 'Administrador' : 'Meus Imóveis'}
                 </p>
