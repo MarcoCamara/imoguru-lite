@@ -9,9 +9,15 @@ import { Card } from '@/components/ui/card';
 
 interface CondominiumMediaFormProps {
   propertyId?: string;
+  pendingCondoImages: File[];
+  setPendingCondoImages: (files: File[]) => void;
 }
 
-export default function CondominiumMediaForm({ propertyId }: CondominiumMediaFormProps) {
+export default function CondominiumMediaForm({ 
+  propertyId,
+  pendingCondoImages,
+  setPendingCondoImages
+}: CondominiumMediaFormProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<any[]>([]);
@@ -58,17 +64,18 @@ export default function CondominiumMediaForm({ propertyId }: CondominiumMediaFor
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // If property is not saved yet, store files locally
     if (!propertyId) {
+      setPendingCondoImages([...pendingCondoImages, ...Array.from(files)]);
       toast({
-        title: 'Atenção',
-        description: 'Salve o imóvel antes de adicionar imagens do condomínio',
-        variant: 'destructive',
+        title: 'Imagens adicionadas!',
+        description: 'As imagens serão enviadas quando você salvar o imóvel.',
       });
       return;
     }
-
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
 
     setUploading(true);
     try {
@@ -210,6 +217,10 @@ export default function CondominiumMediaForm({ propertyId }: CondominiumMediaFor
     }
   };
 
+  const removePendingImage = (index: number) => {
+    setPendingCondoImages(pendingCondoImages.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="space-y-6 pt-4">
       <div>
@@ -223,13 +234,8 @@ export default function CondominiumMediaForm({ propertyId }: CondominiumMediaFor
               accept="image/*"
               multiple
               onChange={handleImageUpload}
-              disabled={uploading || !propertyId}
+              disabled={uploading}
             />
-            {!propertyId && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Salve o imóvel primeiro para adicionar imagens
-              </p>
-            )}
           </div>
 
           {uploading && (
@@ -239,25 +245,57 @@ export default function CondominiumMediaForm({ propertyId }: CondominiumMediaFor
             </div>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {images.map((image) => (
-              <Card key={image.id} className="relative group">
-                <img
-                  src={image.url}
-                  alt="Condomínio"
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleDeleteImage(image.id, image.url)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </Card>
-            ))}
-          </div>
+          {/* Show pending images if property not saved yet */}
+          {!propertyId && pendingCondoImages.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {pendingCondoImages.map((file, index) => (
+                <Card key={index} className="relative group">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt="Preview"
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removePendingImage(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Show saved images if property exists */}
+          {propertyId && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {images.map((image) => (
+                <Card key={image.id} className="relative group">
+                  <img
+                    src={image.url}
+                    alt="Condomínio"
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleDeleteImage(image.id, image.url)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {!propertyId && pendingCondoImages.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              As imagens serão enviadas quando você salvar o imóvel.
+            </p>
+          )}
         </div>
       </div>
 

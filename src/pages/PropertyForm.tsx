@@ -28,6 +28,9 @@ export default function PropertyForm() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!id);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingVideos, setPendingVideos] = useState<File[]>([]);
+  const [pendingCondoImages, setPendingCondoImages] = useState<File[]>([]);
   const [formData, setFormData] = useState<any>({
     title: '',
     code: '',
@@ -108,6 +111,90 @@ export default function PropertyForm() {
     }
   };
 
+  const uploadPendingMedia = async (propertyId: string) => {
+    try {
+      // Upload property images
+      for (const file of pendingImages) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${propertyId}/${Math.random()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('property_images').insert({
+          property_id: propertyId,
+          url: publicUrl,
+          display_order: 0,
+        });
+
+        if (dbError) throw dbError;
+      }
+
+      // Upload property videos
+      for (const file of pendingVideos) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${propertyId}/${Math.random()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-videos')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-videos')
+          .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('property_videos').insert({
+          property_id: propertyId,
+          url: publicUrl,
+          title: file.name,
+        });
+
+        if (dbError) throw dbError;
+      }
+
+      // Upload condominium images
+      for (const file of pendingCondoImages) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${propertyId}/condominium/${Math.random()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(fileName);
+
+        const { error: dbError } = await supabase.from('property_images').insert({
+          property_id: propertyId,
+          url: publicUrl,
+          caption: 'condominium',
+          display_order: 0,
+        });
+
+        if (dbError) throw dbError;
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao fazer upload de mídia',
+        description: error.message,
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.title || !formData.property_type || !formData.purpose) {
       toast({
@@ -125,6 +212,8 @@ export default function PropertyForm() {
         user_id: user?.id,
       };
 
+      let savedPropertyId = id;
+
       if (id) {
         const { error } = await supabase
           .from('properties')
@@ -132,6 +221,11 @@ export default function PropertyForm() {
           .eq('id', id);
 
         if (error) throw error;
+
+        // Upload pending media if any
+        if (pendingImages.length > 0 || pendingVideos.length > 0 || pendingCondoImages.length > 0) {
+          await uploadPendingMedia(id);
+        }
 
         toast({
           title: 'Imóvel atualizado!',
@@ -146,11 +240,20 @@ export default function PropertyForm() {
 
         dataToSave.code = codeData;
 
-        const { error } = await supabase
+        const { data: newProperty, error } = await supabase
           .from('properties')
-          .insert([dataToSave]);
+          .insert([dataToSave])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        savedPropertyId = newProperty.id;
+
+        // Upload pending media if any
+        if (pendingImages.length > 0 || pendingVideos.length > 0 || pendingCondoImages.length > 0) {
+          await uploadPendingMedia(savedPropertyId);
+        }
 
         toast({
           title: 'Imóvel cadastrado!',
@@ -225,7 +328,13 @@ export default function PropertyForm() {
             </TabsContent>
 
             <TabsContent value="condominium">
-              <CondominiumForm formData={formData} setFormData={setFormData} propertyId={id} />
+              <CondominiumForm 
+                formData={formData} 
+                setFormData={setFormData} 
+                propertyId={id}
+                pendingCondoImages={pendingCondoImages}
+                setPendingCondoImages={setPendingCondoImages}
+              />
             </TabsContent>
 
             <TabsContent value="nearby">
@@ -234,7 +343,13 @@ export default function PropertyForm() {
             </TabsContent>
 
             <TabsContent value="media">
-              <MediaForm propertyId={id} />
+              <MediaForm 
+                propertyId={id} 
+                pendingImages={pendingImages}
+                setPendingImages={setPendingImages}
+                pendingVideos={pendingVideos}
+                setPendingVideos={setPendingVideos}
+              />
             </TabsContent>
 
             <TabsContent value="documents">

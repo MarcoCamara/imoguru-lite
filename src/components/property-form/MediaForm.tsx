@@ -9,9 +9,19 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface MediaFormProps {
   propertyId?: string;
+  pendingImages: File[];
+  setPendingImages: (files: File[]) => void;
+  pendingVideos: File[];
+  setPendingVideos: (files: File[]) => void;
 }
 
-export default function MediaForm({ propertyId }: MediaFormProps) {
+export default function MediaForm({ 
+  propertyId, 
+  pendingImages, 
+  setPendingImages,
+  pendingVideos,
+  setPendingVideos 
+}: MediaFormProps) {
   const { toast } = useToast();
   const [images, setImages] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -58,16 +68,18 @@ export default function MediaForm({ propertyId }: MediaFormProps) {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // If property is not saved yet, store files locally
     if (!propertyId) {
+      setPendingImages([...pendingImages, ...Array.from(files)]);
       toast({
-        title: 'Salve o imóvel primeiro',
-        variant: 'destructive',
+        title: 'Imagens adicionadas!',
+        description: 'As imagens serão enviadas quando você salvar o imóvel.',
       });
       return;
     }
-
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
 
     setUploading(true);
     try {
@@ -114,16 +126,18 @@ export default function MediaForm({ propertyId }: MediaFormProps) {
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // If property is not saved yet, store files locally
     if (!propertyId) {
+      setPendingVideos([...pendingVideos, ...Array.from(files)]);
       toast({
-        title: 'Salve o imóvel primeiro',
-        variant: 'destructive',
+        title: 'Vídeos adicionados!',
+        description: 'Os vídeos serão enviados quando você salvar o imóvel.',
       });
       return;
     }
-
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
 
     setUploading(true);
     try {
@@ -234,10 +248,100 @@ export default function MediaForm({ propertyId }: MediaFormProps) {
     }
   };
 
+  const removePendingImage = (index: number) => {
+    setPendingImages(pendingImages.filter((_, i) => i !== index));
+  };
+
+  const removePendingVideo = (index: number) => {
+    setPendingVideos(pendingVideos.filter((_, i) => i !== index));
+  };
+
   if (!propertyId) {
     return (
-      <div className="pt-4 text-center text-muted-foreground">
-        Salve o imóvel primeiro para fazer upload de imagens e vídeos.
+      <div className="space-y-6 pt-4">
+        <div>
+          <Label>Imagens</Label>
+          <div className="mt-2">
+            <Input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              disabled={uploading}
+            />
+          </div>
+
+          {pendingImages.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              {pendingImages.map((file, index) => (
+                <Card key={index} className="relative overflow-hidden">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt="Preview"
+                    className="w-full h-32 object-cover"
+                  />
+                  <CardContent className="p-2 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removePendingImage(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {pendingImages.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhuma imagem adicionada ainda.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <Label>Vídeos</Label>
+          <div className="mt-2">
+            <Input
+              type="file"
+              accept="video/*"
+              multiple
+              onChange={handleVideoUpload}
+              disabled={uploading}
+            />
+          </div>
+
+          {pendingVideos.length > 0 && (
+            <div className="space-y-2 mt-4">
+              {pendingVideos.map((file, index) => (
+                <Card key={index}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <p className="font-medium">{file.name}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removePendingVideo(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {pendingVideos.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhum vídeo adicionado ainda.
+            </p>
+          )}
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          As imagens e vídeos serão enviados quando você salvar o imóvel.
+        </p>
       </div>
     );
   }

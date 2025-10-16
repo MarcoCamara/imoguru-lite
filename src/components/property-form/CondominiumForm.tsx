@@ -9,9 +9,17 @@ interface CondominiumFormProps {
   formData: any;
   setFormData: (data: any) => void;
   propertyId?: string;
+  pendingCondoImages: File[];
+  setPendingCondoImages: (files: File[]) => void;
 }
 
-export default function CondominiumForm({ formData, setFormData, propertyId }: CondominiumFormProps) {
+export default function CondominiumForm({ 
+  formData, 
+  setFormData, 
+  propertyId,
+  pendingCondoImages,
+  setPendingCondoImages 
+}: CondominiumFormProps) {
   const toggleAmenity = (amenityName: string) => {
     const current = formData.condo_amenities || [];
     const updated = current.includes(amenityName)
@@ -86,7 +94,11 @@ export default function CondominiumForm({ formData, setFormData, propertyId }: C
 
       <Separator />
 
-      <CondominiumMediaForm propertyId={propertyId} />
+      <CondominiumMediaForm 
+        propertyId={propertyId}
+        pendingCondoImages={pendingCondoImages}
+        setPendingCondoImages={setPendingCondoImages}
+      />
     </div>
   );
 }

@@ -921,6 +921,18 @@ export type Database = {
         | "rural"
         | "galpao"
         | "outro"
+        | "casa_rua"
+        | "casa_condominio"
+        | "studio_kitnet"
+        | "flat"
+        | "terreno_rua"
+        | "terreno_condominio"
+        | "sala_comercial"
+        | "ponto_loja"
+        | "consultorio"
+        | "sitio_fazenda"
+        | "chacara_rancho"
+        | "gleba"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1072,6 +1084,18 @@ export const Constants = {
         "rural",
         "galpao",
         "outro",
+        "casa_rua",
+        "casa_condominio",
+        "studio_kitnet",
+        "flat",
+        "terreno_rua",
+        "terreno_condominio",
+        "sala_comercial",
+        "ponto_loja",
+        "consultorio",
+        "sitio_fazenda",
+        "chacara_rancho",
+        "gleba",
       ],
     },
   },
