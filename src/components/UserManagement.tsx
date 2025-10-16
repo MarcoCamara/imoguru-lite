@@ -43,7 +43,7 @@ export default function UserManagement() {
     email: '',
     password: '',
     fullName: '',
-    companyId: '',
+    companyId: undefined as string | undefined,
     role: 'user',
   });
 
@@ -131,7 +131,7 @@ export default function UserManagement() {
         email: '',
         password: '',
         fullName: '',
-        companyId: '',
+        companyId: undefined,
         role: 'user',
       });
       setIsDialogOpen(false);
@@ -252,16 +252,15 @@ export default function UserManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="user_company">Empresa</Label>
+                  <Label htmlFor="user_company">Empresa (Opcional)</Label>
                   <Select
                     value={newUser.companyId}
                     onValueChange={(value) => setNewUser({ ...newUser, companyId: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma empresa" />
+                      <SelectValue placeholder="Selecione uma empresa (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma</SelectItem>
                       {companies.map((company) => (
                         <SelectItem key={company.id} value={company.id}>
                           {company.name}
