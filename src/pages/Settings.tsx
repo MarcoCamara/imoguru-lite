@@ -24,6 +24,8 @@ interface SystemSettings {
   logo_size_mobile?: number;
   logo_size_tablet?: number;
   logo_size_desktop?: number;
+  show_dashboard_metrics?: boolean;
+  show_dashboard_charts?: boolean;
 }
 
 export default function Settings() {
@@ -43,6 +45,8 @@ export default function Settings() {
     logo_size_mobile: 40,
     logo_size_tablet: 48,
     logo_size_desktop: 56,
+    show_dashboard_metrics: true,
+    show_dashboard_charts: true,
   });
 
   useEffect(() => {
@@ -467,6 +471,45 @@ export default function Settings() {
             logoUrl={settings.logo_url}
             faviconUrl={settings.favicon_url}
           />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Visualização do Dashboard</CardTitle>
+              <CardDescription>Configure o que será exibido na página principal</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="show_metrics">Mostrar Cards de Estatísticas</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Exibir cards com total de imóveis, vendas, locações, etc.
+                  </p>
+                </div>
+                <Switch
+                  id="show_metrics"
+                  checked={settings.show_dashboard_metrics ?? true}
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, show_dashboard_metrics: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="show_charts">Mostrar Gráficos</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Exibir gráficos de distribuição e compartilhamentos
+                  </p>
+                </div>
+                <Switch
+                  id="show_charts"
+                  checked={settings.show_dashboard_charts ?? true}
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, show_dashboard_charts: checked })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

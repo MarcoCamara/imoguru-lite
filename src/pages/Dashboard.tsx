@@ -37,6 +37,8 @@ export default function Dashboard() {
     logo_size_mobile: 40,
     logo_size_tablet: 48,
     logo_size_desktop: 56,
+    show_dashboard_metrics: true,
+    show_dashboard_charts: true,
   });
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop']);
+        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop', 'show_dashboard_metrics', 'show_dashboard_charts']);
 
       if (error) throw error;
 
@@ -89,6 +91,8 @@ export default function Dashboard() {
         logo_size_mobile: 40,
         logo_size_tablet: 48,
         logo_size_desktop: 56,
+        show_dashboard_metrics: true,
+        show_dashboard_charts: true,
       };
       data?.forEach((item) => {
         settingsObj[item.setting_key] = item.setting_value;
@@ -335,43 +339,49 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {systemSettings.logo_url ? (
-                <div 
-                  className="rounded-lg overflow-hidden flex-shrink-0"
+                <img 
+                  src={systemSettings.logo_url} 
+                  alt={systemSettings.app_name} 
+                  className="object-contain flex-shrink-0 md:hidden"
                   style={{
-                    height: `${systemSettings.logo_size_mobile || 40}px`,
-                    width: `${systemSettings.logo_size_mobile || 40}px`,
+                    maxHeight: `${systemSettings.logo_size_mobile || 40}px`,
+                    height: 'auto',
+                    width: 'auto',
+                    maxWidth: `${systemSettings.logo_size_mobile || 40}px`,
                   }}
-                >
-                  <img 
-                    src={systemSettings.logo_url} 
-                    alt={systemSettings.app_name} 
-                    className="w-full h-full object-contain md:hidden"
-                    style={{
-                      height: `${systemSettings.logo_size_mobile || 40}px`,
-                      width: `${systemSettings.logo_size_mobile || 40}px`,
-                    }}
-                  />
-                  <img 
-                    src={systemSettings.logo_url} 
-                    alt={systemSettings.app_name} 
-                    className="w-full h-full object-contain hidden md:block lg:hidden"
-                    style={{
-                      height: `${systemSettings.logo_size_tablet || 48}px`,
-                      width: `${systemSettings.logo_size_tablet || 48}px`,
-                    }}
-                  />
-                  <img 
-                    src={systemSettings.logo_url} 
-                    alt={systemSettings.app_name} 
-                    className="w-full h-full object-contain hidden lg:block"
-                    style={{
-                      height: `${systemSettings.logo_size_desktop || 56}px`,
-                      width: `${systemSettings.logo_size_desktop || 56}px`,
-                    }}
-                  />
-                </div>
+                />
               ) : (
-                <Building2 className="h-8 w-8 md:h-10 md:h-10 lg:h-12 lg:w-12 text-primary flex-shrink-0" />
+                <Building2 className="h-8 w-8 text-primary flex-shrink-0 md:hidden" />
+              )}
+              {systemSettings.logo_url ? (
+                <img 
+                  src={systemSettings.logo_url} 
+                  alt={systemSettings.app_name} 
+                  className="object-contain flex-shrink-0 hidden md:block lg:hidden"
+                  style={{
+                    maxHeight: `${systemSettings.logo_size_tablet || 48}px`,
+                    height: 'auto',
+                    width: 'auto',
+                    maxWidth: `${systemSettings.logo_size_tablet || 48}px`,
+                  }}
+                />
+              ) : (
+                <Building2 className="h-10 w-10 text-primary flex-shrink-0 hidden md:block lg:hidden" />
+              )}
+              {systemSettings.logo_url ? (
+                <img 
+                  src={systemSettings.logo_url} 
+                  alt={systemSettings.app_name} 
+                  className="object-contain flex-shrink-0 hidden lg:block"
+                  style={{
+                    maxHeight: `${systemSettings.logo_size_desktop || 56}px`,
+                    height: 'auto',
+                    width: 'auto',
+                    maxWidth: `${systemSettings.logo_size_desktop || 56}px`,
+                  }}
+                />
+              ) : (
+                <Building2 className="h-12 w-12 text-primary flex-shrink-0 hidden lg:block" />
               )}
               <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
                 {systemSettings.app_name}
@@ -463,7 +473,7 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <DashboardMetrics />
+        {systemSettings.show_dashboard_metrics && <DashboardMetrics showCharts={systemSettings.show_dashboard_charts} />}
         
         {showFilters && (
           <Card className="mb-6 p-6">
@@ -498,9 +508,27 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">
-                {filteredProperties.length} imóve{filteredProperties.length === 1 ? 'l' : 'is'} encontrado{filteredProperties.length === 1 ? '' : 's'}
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold text-foreground">
+                  {filteredProperties.length} imóve{filteredProperties.length === 1 ? 'l' : 'is'} encontrado{filteredProperties.length === 1 ? '' : 's'}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedProperties.length === filteredProperties.length && filteredProperties.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedProperties(filteredProperties.map(p => p.id));
+                      } else {
+                        setSelectedProperties([]);
+                      }
+                    }}
+                    className="h-4 w-4 cursor-pointer"
+                    title="Selecionar todos"
+                  />
+                  <span className="text-sm text-muted-foreground">Selecionar todos</span>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center border rounded-lg">
                   <Button
