@@ -33,6 +33,9 @@ export default function Dashboard() {
   const [systemSettings, setSystemSettings] = useState<any>({
     app_name: 'ImoGuru',
     logo_url: null,
+    logo_size_mobile: 40,
+    logo_size_tablet: 48,
+    logo_size_desktop: 56,
   });
 
   useEffect(() => {
@@ -45,6 +48,28 @@ export default function Dashboard() {
     if (user) {
       fetchProperties();
       fetchSystemSettings();
+
+      // Setup realtime subscription for properties table
+      const channel = supabase
+        .channel('properties-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'properties',
+            filter: isAdmin ? undefined : `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Property change detected:', payload);
+            fetchProperties(); // Refresh properties when any change occurs
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user, isAdmin]);
 
@@ -53,11 +78,17 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['app_name', 'logo_url']);
+        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop']);
 
       if (error) throw error;
 
-      const settingsObj: any = { app_name: 'ImoGuru', logo_url: null };
+      const settingsObj: any = { 
+        app_name: 'ImoGuru', 
+        logo_url: null,
+        logo_size_mobile: 40,
+        logo_size_tablet: 48,
+        logo_size_desktop: 56,
+      };
       data?.forEach((item) => {
         settingsObj[item.setting_key] = item.setting_value;
       });
@@ -303,21 +334,49 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {systemSettings.logo_url ? (
-                <div className="h-10 w-10 rounded-lg overflow-hidden">
+                <div 
+                  className="rounded-lg overflow-hidden"
+                  style={{
+                    height: `${systemSettings.logo_size_mobile || 40}px`,
+                    width: `${systemSettings.logo_size_mobile || 40}px`,
+                  }}
+                >
                   <img 
                     src={systemSettings.logo_url} 
                     alt={systemSettings.app_name} 
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain md:hidden"
+                    style={{
+                      height: `${systemSettings.logo_size_mobile || 40}px`,
+                      width: `${systemSettings.logo_size_mobile || 40}px`,
+                    }}
+                  />
+                  <img 
+                    src={systemSettings.logo_url} 
+                    alt={systemSettings.app_name} 
+                    className="w-full h-full object-contain hidden md:block lg:hidden"
+                    style={{
+                      height: `${systemSettings.logo_size_tablet || 48}px`,
+                      width: `${systemSettings.logo_size_tablet || 48}px`,
+                    }}
+                  />
+                  <img 
+                    src={systemSettings.logo_url} 
+                    alt={systemSettings.app_name} 
+                    className="w-full h-full object-contain hidden lg:block"
+                    style={{
+                      height: `${systemSettings.logo_size_desktop || 56}px`,
+                      width: `${systemSettings.logo_size_desktop || 56}px`,
+                    }}
                   />
                 </div>
               ) : (
-                <Building2 className="h-8 w-8 text-primary" />
+                <Building2 className="h-8 w-8 md:h-10 md:h-10 lg:h-12 lg:w-12 text-primary" />
               )}
               <div>
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
                   {systemSettings.app_name}
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   {isAdmin ? 'Administrador' : 'Meus Imóveis'}
                 </p>
               </div>

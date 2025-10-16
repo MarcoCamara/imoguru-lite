@@ -21,6 +21,9 @@ interface SystemSettings {
   video_links_enabled: boolean;
   logo_url?: string;
   favicon_url?: string;
+  logo_size_mobile?: number;
+  logo_size_tablet?: number;
+  logo_size_desktop?: number;
 }
 
 export default function Settings() {
@@ -37,6 +40,9 @@ export default function Settings() {
     max_image_size_mb: 5,
     video_upload_enabled: false,
     video_links_enabled: true,
+    logo_size_mobile: 40,
+    logo_size_tablet: 48,
+    logo_size_desktop: 56,
   });
 
   useEffect(() => {
@@ -301,6 +307,54 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label>Tamanho do Logo (pixels)</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="logo_size_mobile" className="text-xs text-muted-foreground">
+                      Mobile
+                    </Label>
+                    <Input
+                      id="logo_size_mobile"
+                      type="number"
+                      min="24"
+                      max="80"
+                      value={settings.logo_size_mobile}
+                      onChange={(e) => setSettings({ ...settings, logo_size_mobile: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="logo_size_tablet" className="text-xs text-muted-foreground">
+                      Tablet
+                    </Label>
+                    <Input
+                      id="logo_size_tablet"
+                      type="number"
+                      min="24"
+                      max="96"
+                      value={settings.logo_size_tablet}
+                      onChange={(e) => setSettings({ ...settings, logo_size_tablet: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="logo_size_desktop" className="text-xs text-muted-foreground">
+                      Desktop
+                    </Label>
+                    <Input
+                      id="logo_size_desktop"
+                      type="number"
+                      min="24"
+                      max="120"
+                      value={settings.logo_size_desktop}
+                      onChange={(e) => setSettings({ ...settings, logo_size_desktop: parseInt(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ajuste o tamanho do logo para cada tipo de dispositivo
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
