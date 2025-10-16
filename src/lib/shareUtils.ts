@@ -129,12 +129,22 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
   // Detect if mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // On desktop: opens WhatsApp via universal API (redirects to Web/App)
-  const whatsappUrl = isMobile 
-    ? `whatsapp://send?text=${encodedMessage}`
-    : `https://web.whatsapp.com/send?text=${encodedMessage}`;
+  if (isMobile) {
+    // No mobile, perguntar se tem WhatsApp Business
+    const useWhatsAppBusiness = confirm('Você possui WhatsApp Business instalado? Clique em OK para usar o WhatsApp Business ou Cancelar para usar o WhatsApp comum.');
+    
+    if (useWhatsAppBusiness) {
+      // Tentar abrir WhatsApp Business primeiro
+      window.location.href = `https://wa.me/?text=${encodedMessage}`;
+    } else {
+      // Abrir WhatsApp comum
+      window.location.href = `whatsapp://send?text=${encodedMessage}`;
+    }
+  } else {
+    // No desktop, sempre usar WhatsApp Web
+    window.open(`https://web.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+  }
   
-  window.open(whatsappUrl, '_blank');
   return true;
 };
 
@@ -192,39 +202,87 @@ export const shareToEmail = async (property: any, message: string, images: strin
 };
 
 export const shareToMessenger = async (message: string) => {
-  const encodedMessage = encodeURIComponent(message);
-  const messengerUrl = `fb-messenger://share?link=${encodedMessage}`;
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // Fallback to web if app not installed
-  const webFallback = `https://www.messenger.com/`;
-  
+  // Copiar mensagem para área de transferência
   try {
-    window.open(messengerUrl, '_blank');
-    setTimeout(() => window.open(webFallback, '_blank'), 1000);
-  } catch {
-    window.open(webFallback, '_blank');
+    await navigator.clipboard.writeText(message);
+  } catch (error) {
+    console.error('Error copying to clipboard:', error);
+  }
+  
+  if (isMobile) {
+    // Abrir Messenger app no mobile
+    window.location.href = `fb-messenger://`;
+    
+    // Fallback para web após 2 segundos se o app não abrir
+    setTimeout(() => {
+      window.open('https://www.messenger.com/', '_blank');
+    }, 2000);
+  } else {
+    // Abrir Messenger web no desktop
+    window.open('https://www.messenger.com/', '_blank');
   }
   
   return true;
 };
 
 export const shareToFacebook = async (message: string, images: string[]) => {
-  const encodedMessage = encodeURIComponent(message);
-  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodedMessage}`;
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  window.open(facebookUrl, '_blank', 'width=600,height=400');
+  // Copiar mensagem para área de transferência
+  try {
+    await navigator.clipboard.writeText(message);
+  } catch (error) {
+    console.error('Error copying to clipboard:', error);
+  }
+  
+  const propertyUrl = encodeURIComponent(window.location.href);
+  const encodedMessage = encodeURIComponent(message);
+  
+  if (isMobile) {
+    // Tentar abrir o app do Facebook no mobile
+    const fbAppUrl = `fb://facewebmodal/f?href=${encodeURIComponent(`https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}`)}`;
+    window.location.href = fbAppUrl;
+    
+    // Fallback para web após 2 segundos se o app não abrir
+    setTimeout(() => {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}&quote=${encodedMessage}`, '_blank');
+    }, 2000);
+  } else {
+    // No desktop, abrir janela de compartilhamento do Facebook
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${propertyUrl}&quote=${encodedMessage}`;
+    window.open(facebookUrl, '_blank', 'width=600,height=400');
+  }
+  
   return true;
 };
 
 export const shareToInstagram = async (message: string) => {
-  // Instagram doesn't have direct sharing API for web
-  // Copy message to clipboard for user to paste
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Copiar mensagem para área de transferência
   try {
     await navigator.clipboard.writeText(message);
-    return 'clipboard';
-  } catch {
+  } catch (error) {
+    console.error('Error copying to clipboard:', error);
     return false;
   }
+  
+  if (isMobile) {
+    // Tentar abrir o Instagram app no mobile
+    window.location.href = 'instagram://';
+    
+    // Fallback para web após 1 segundo se o app não abrir
+    setTimeout(() => {
+      window.open('https://www.instagram.com/', '_blank');
+    }, 1000);
+  } else {
+    // No desktop, abrir Instagram web
+    window.open('https://www.instagram.com/', '_blank');
+  }
+  
+  return 'clipboard';
 };
 
 export const trackShare = async (propertyId: string, platform: SharePlatform) => {

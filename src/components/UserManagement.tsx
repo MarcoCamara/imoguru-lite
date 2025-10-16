@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, User, KeyRound } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, KeyRound, Edit } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,8 @@ export default function UserManagement() {
   const [userRoles, setUserRoles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -195,6 +197,43 @@ export default function UserManagement() {
     }
   };
 
+  const handleEditUser = (user: UserProfile) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editingUser.full_name,
+          company_id: editingUser.company_id,
+        })
+        .eq('id', editingUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Dados do usuário atualizados!',
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      loadData();
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível atualizar o usuário.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return <div>Carregando usuários...</div>;
   }
@@ -344,6 +383,14 @@ export default function UserManagement() {
                   <Button
                     variant="outline"
                     size="icon"
+                    onClick={() => handleEditUser(user)}
+                    title="Editar usuário"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => handleResetPassword(user.email)}
                     title="Resetar senha"
                   >
@@ -355,6 +402,65 @@ export default function UserManagement() {
           </div>
         )}
       </CardContent>
+
+      {/* Dialog de Edição */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Atualize os dados do usuário
+            </DialogDescription>
+          </DialogHeader>
+          {editingUser && (
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="edit_email">E-mail</Label>
+                <Input
+                  id="edit_email"
+                  type="email"
+                  value={editingUser.email}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_name">Nome Completo</Label>
+                <Input
+                  id="edit_name"
+                  value={editingUser.full_name || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                  placeholder="Nome do usuário"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_company">Empresa</Label>
+                <Select
+                  value={editingUser.company_id || undefined}
+                  onValueChange={(value) => setEditingUser({ ...editingUser, company_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma empresa (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateUser}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
