@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -13,7 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplatePreview from '@/components/TemplatePreview';
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface ShareTemplate {
   id: string;
@@ -307,19 +308,34 @@ export default function ShareTemplates() {
                 </div>
 
                 <div>
-                  <Label htmlFor="message">Formato da Mensagem</Label>
-                  <Textarea
-                    id="message"
-                    value={editingTemplate.message_format}
-                    onChange={(e) =>
-                      setEditingTemplate({ ...editingTemplate, message_format: e.target.value })
-                    }
-                    rows={8}
-                    placeholder="Use {{campo}} para inserir valores dinâmicos"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use {`{{campo}}`} para inserir valores dinâmicos. Ex: {`{{title}}, {{price}}`}
-                  </p>
+                  <Label>Formato da Mensagem</Label>
+                  <Tabs defaultValue="rich" className="mt-2">
+                    <TabsList>
+                      <TabsTrigger value="rich">Editor Visual</TabsTrigger>
+                      <TabsTrigger value="text">Texto Simples</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="rich">
+                      <RichTextEditor
+                        content={editingTemplate.message_format}
+                        onChange={(content) =>
+                          setEditingTemplate({ ...editingTemplate, message_format: content })
+                        }
+                      />
+                    </TabsContent>
+                    <TabsContent value="text">
+                      <textarea
+                        className="w-full min-h-[300px] p-4 border rounded-md"
+                        value={editingTemplate.message_format}
+                        onChange={(e) =>
+                          setEditingTemplate({ ...editingTemplate, message_format: e.target.value })
+                        }
+                        placeholder="Use {{campo}} para inserir valores dinâmicos"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use {`{{campo}}`} para inserir valores dinâmicos. Ex: {`{{title}}, {{price}}`}
+                      </p>
+                    </TabsContent>
+                  </Tabs>
                 </div>
 
                 <div>

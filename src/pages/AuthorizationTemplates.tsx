@@ -5,14 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Edit, Trash2, Download, FileText, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplatePreview from '@/components/TemplatePreview';
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface AuthTemplate {
   id: string;
@@ -281,23 +282,38 @@ Assinatura do Proprietário`,
                 </div>
 
                 <div>
-                  <Label htmlFor="content">Conteúdo do Template</Label>
-                  <Textarea
-                    id="content"
-                    value={editingTemplate.content}
-                    onChange={(e) =>
-                      setEditingTemplate({ ...editingTemplate, content: e.target.value })
-                    }
-                    rows={20}
-                    placeholder="Digite o conteúdo da autorização..."
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Use {`{{campo}}`} para inserir valores dinâmicos. Campos disponíveis:{' '}
-                    <code className="text-xs">
-                      {`{{owner_name}}, {{owner_cpf_cnpj}}, {{owner_email}}, {{owner_phone}}, `}
-                      {`{{code}}, {{title}}, {{property_type}}, {{full_address}}, {{price}}, {{date}}`}
-                    </code>
-                  </p>
+                  <Label>Conteúdo do Template</Label>
+                  <Tabs defaultValue="rich" className="mt-2">
+                    <TabsList>
+                      <TabsTrigger value="rich">Editor Visual</TabsTrigger>
+                      <TabsTrigger value="text">Texto Simples</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="rich">
+                      <RichTextEditor
+                        content={editingTemplate.content}
+                        onChange={(content) =>
+                          setEditingTemplate({ ...editingTemplate, content })
+                        }
+                      />
+                    </TabsContent>
+                    <TabsContent value="text">
+                      <textarea
+                        className="w-full min-h-[400px] p-4 border rounded-md font-mono text-sm"
+                        value={editingTemplate.content}
+                        onChange={(e) =>
+                          setEditingTemplate({ ...editingTemplate, content: e.target.value })
+                        }
+                        placeholder="Digite o conteúdo da autorização..."
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Use {`{{campo}}`} para inserir valores dinâmicos. Campos disponíveis:{' '}
+                        <code className="text-xs">
+                          {`{{owner_name}}, {{owner_cpf_cnpj}}, {{owner_email}}, {{owner_phone}}, `}
+                          {`{{code}}, {{title}}, {{property_type}}, {{full_address}}, {{price}}, {{date}}`}
+                        </code>
+                      </p>
+                    </TabsContent>
+                  </Tabs>
                 </div>
 
                 <div className="flex items-center justify-between">

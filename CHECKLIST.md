@@ -5,7 +5,10 @@
 - [x] 1.1. Estrutura básica de templates criada
 - [x] 1.1.1. Correção WhatsApp (web/desktop) - usa web.whatsapp.com
 - [x] 1.1.2. Variáveis de sistema nos templates ({{app_name}}, {{logo_url}})
-- [ ] 1.2. Corrigir formatação de email com HTML
+- [x] 1.2. Email com formatação HTML completa usando templates do banco
+- [x] 1.2.1. Edge function send-property-email com suporte a templates
+- [x] 1.2.2. Email formatado com imagens do imóvel
+- [x] 1.2.3. Integração com Resend para envio de emails
 - [ ] 1.3. Implementar Web Share API (nativo do navegador)
 - [ ] 1.4. Adicionar fallback para copiar texto formatado
 - [ ] 1.5. Melhorar feedback visual ao compartilhar
@@ -90,13 +93,16 @@
 - [x] 8.5. Seção: Templates de Compartilhamento
 - [x] 8.5.1. Listagem de templates
 - [x] 8.5.2. Editar templates existentes
-- [ ] 8.5.3. Preview de templates
+- [x] 8.5.3. Preview de templates (com imagens de exemplo)
+- [x] 8.5.4. Editor rico (Tiptap) com formatação avançada
+- [x] 8.5.5. Suporte a tabelas e colunas no editor
 - [x] 8.6. Seção: Templates de Autorização
 - [x] 8.6.1. Listagem de templates
 - [x] 8.6.2. Criar novo template
 - [x] 8.6.3. Editar template existente
 - [x] 8.6.4. Deletar template
-- [x] 8.6.5. Editor rich text para templates
+- [x] 8.6.5. Editor rico (Tiptap) para templates
+- [x] 8.6.6. Preview de templates de autorização
 - [ ] 8.7. Seção: Templates de Impressão
 
 ### 9. Dashboard Admin

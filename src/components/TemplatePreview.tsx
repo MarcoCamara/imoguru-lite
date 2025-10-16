@@ -14,6 +14,13 @@ interface TemplatePreviewProps {
   type: 'share' | 'authorization';
 }
 
+// Imagens de exemplo
+const sampleImages = [
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800&h=600&fit=crop',
+];
+
 // Dados de exemplo de uma propriedade
 const sampleProperty = {
   title: 'Apartamento Moderno no Centro',
@@ -81,6 +88,16 @@ export default function TemplatePreview({ open, onOpenChange, template, type }: 
     formatted = formatted.replace(/\{\{[^}]+\}\}/g, '[não disponível]');
     formatted = formatted.replace(/\{[^}]+\}/g, '[não disponível]');
 
+    // Adicionar imagens de exemplo ao final (se for template de compartilhamento)
+    if (type === 'share' && isHtmlContent(content)) {
+      const imageHtml = sampleImages.map(url => `
+        <div style="margin: 10px 0;">
+          <img src="${url}" alt="Imagem do imóvel" style="max-width: 100%; height: auto; border-radius: 8px;" />
+        </div>
+      `).join('');
+      formatted += `<div style="margin-top: 20px;"><h3>Fotos do Imóvel:</h3>${imageHtml}</div>`;
+    }
+
     return formatted;
   };
 
@@ -104,7 +121,7 @@ export default function TemplatePreview({ open, onOpenChange, template, type }: 
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-muted p-4 rounded-lg">
+          <div className="bg-muted p-4 rounded-lg max-h-[60vh] overflow-y-auto">
             <p className="text-xs text-muted-foreground mb-2">
               Preview com dados de exemplo:
             </p>
@@ -115,9 +132,26 @@ export default function TemplatePreview({ open, onOpenChange, template, type }: 
                 dangerouslySetInnerHTML={{ __html: content }}
               />
             ) : (
-              <pre className="whitespace-pre-wrap font-sans text-sm">
-                {content}
-              </pre>
+              <>
+                <pre className="whitespace-pre-wrap font-sans text-sm mb-4">
+                  {content}
+                </pre>
+                {type === 'share' && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Fotos do Imóvel:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {sampleImages.map((url, idx) => (
+                        <img 
+                          key={idx}
+                          src={url} 
+                          alt={`Imagem ${idx + 1}`}
+                          className="w-full h-32 object-cover rounded-md"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
