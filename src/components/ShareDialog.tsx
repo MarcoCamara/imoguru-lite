@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -44,12 +45,32 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [systemSettings, setSystemSettings] = useState<any>({ app_name: 'ImoGuru', logo_url: null });
 
   useEffect(() => {
     if (open) {
       loadTemplates();
+      loadSystemSettings();
     }
   }, [open]);
+
+  const loadSystemSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['app_name', 'logo_url']);
+
+      const settings: any = { app_name: 'ImoGuru', logo_url: null };
+      data?.forEach((item) => {
+        settings[item.setting_key] = item.setting_value;
+      });
+
+      setSystemSettings(settings);
+    } catch (error) {
+      console.error('Error loading system settings:', error);
+    }
+  };
 
   const loadTemplates = async () => {
     try {
@@ -101,7 +122,7 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
             result = await shareToWhatsApp(message, images);
             break;
           case 'email':
-            result = await shareToEmail(property, message, images);
+            result = await shareToEmail(property, message, images, systemSettings);
             break;
           case 'messenger':
             result = await shareToMessenger(message);

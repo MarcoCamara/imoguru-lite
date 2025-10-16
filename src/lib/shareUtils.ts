@@ -138,13 +138,48 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
   return true;
 };
 
-export const shareToEmail = async (property: any, message: string, images: string[]) => {
-  const subject = encodeURIComponent(`Imóvel: ${property.title || 'Sem título'}`);
-  const body = encodeURIComponent(message);
-  const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
-  
-  window.location.href = mailtoUrl;
-  return true;
+export const shareToEmail = async (property: any, message: string, images: string[], systemSettings?: any) => {
+  try {
+    // Get email from user prompt
+    const email = prompt('Digite o email do destinatário:');
+    if (!email) return false;
+
+    // Call edge function to send formatted email
+    const { data, error } = await supabase.functions.invoke('send-property-email', {
+      body: {
+        to: email,
+        property: {
+          title: property.title,
+          code: property.code,
+          description: property.description,
+          property_type: property.property_type,
+          purpose: property.purpose,
+          city: property.city,
+          neighborhood: property.neighborhood,
+          bedrooms: property.bedrooms,
+          suites: property.suites,
+          bathrooms: property.bathrooms,
+          parking_spaces: property.parking_spaces,
+          useful_area: property.useful_area,
+          total_area: property.total_area,
+          sale_price: property.sale_price,
+          rental_price: property.rental_price,
+          iptu_price: property.iptu_price,
+          condo_price: property.condo_price,
+        },
+        images: images,
+        appName: systemSettings?.app_name || 'ImoGuru',
+        logoUrl: systemSettings?.logo_url || null,
+      },
+    });
+
+    if (error) throw error;
+
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return false;
+  }
 };
 
 export const shareToMessenger = async (message: string) => {
