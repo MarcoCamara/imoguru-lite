@@ -148,6 +148,20 @@ router.post('/company-logos/:company_id',
     try {
       const { company_id } = req.params;
 
+      // Verify user is admin OR belongs to company
+      const authCheck = await db.query(
+        `SELECT c.id FROM companies c
+         LEFT JOIN profiles p ON p.company_id = c.id
+         WHERE c.id = $1 AND (p.id = $2 OR EXISTS(
+           SELECT 1 FROM user_roles WHERE user_id = $2 AND role = 'admin'
+         ))`,
+        [company_id, req.user.id]
+      );
+
+      if (authCheck.rows.length === 0) {
+        return res.status(403).json({ error: 'Não autorizado para esta empresa' });
+      }
+
       const url = `/uploads/company-logos/${req.file.filename}`;
 
       const result = await db.query(

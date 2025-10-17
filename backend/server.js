@@ -12,6 +12,7 @@ const companiesRoutes = require('./routes/companies');
 const templatesRoutes = require('./routes/templates');
 const emailRoutes = require('./routes/email');
 const uploadRoutes = require('./routes/upload');
+const filesRoutes = require('./routes/files');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,8 +27,9 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Static files (uploads)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files (uploads) - Only serve public assets
+app.use('/uploads/property-images', express.static(path.join(__dirname, 'uploads/property-images')));
+app.use('/uploads/company-logos', express.static(path.join(__dirname, 'uploads/company-logos')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -37,6 +39,7 @@ app.use('/api/companies', companiesRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/files', filesRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
