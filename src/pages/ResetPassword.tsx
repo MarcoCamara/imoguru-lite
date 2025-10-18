@@ -1,56 +1,33 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function ResetPassword() {
   const { updatePassword } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [appName, setAppName] = useState('ImoGuru');
-  const [logoUrl, setLogoUrl] = useState('');
-  const [logoSize, setLogoSize] = useState(48);
   const [passwords, setPasswords] = useState({
     password: '',
     confirmPassword: '',
   });
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('setting_key, setting_value')
-        .in('setting_key', ['app_name', 'logo_url', 'logo_size_login']);
-
-      if (error) throw error;
-
-      data?.forEach((item) => {
-        if (item.setting_key === 'app_name') {
-          setAppName(item.setting_value as string);
-        } else if (item.setting_key === 'logo_url') {
-          setLogoUrl(item.setting_value as string);
-        } else if (item.setting_key === 'logo_size_login') {
-          setLogoSize(item.setting_value as number);
-        }
-      });
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
+  const token = searchParams.get('token');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!token) {
+      alert('Token de redefinição não encontrado. Por favor, use o link do email.');
+      return;
+    }
     
     if (passwords.password !== passwords.confirmPassword) {
       alert('As senhas não coincidem');
@@ -64,7 +41,10 @@ export default function ResetPassword() {
 
     setIsLoading(true);
     try {
-      await updatePassword(passwords.password);
+      await updatePassword(passwords.password, token);
+      navigate('/auth');
+    } catch (error) {
+      // Error already shown by context
     } finally {
       setIsLoading(false);
     }
@@ -74,17 +54,8 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          {logoUrl ? (
-            <img 
-              src={logoUrl} 
-              alt={appName} 
-              style={{ height: `${logoSize}px`, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
-              className="mr-3"
-            />
-          ) : (
-            <Building2 className="h-12 w-12 text-primary mr-3" />
-          )}
-          <h1 className="text-4xl font-bold text-foreground">{appName}</h1>
+          <Building2 className="h-12 w-12 text-primary mr-3" />
+          <h1 className="text-4xl font-bold text-foreground">ImoGuru</h1>
         </div>
 
         <Card>

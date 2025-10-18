@@ -7,16 +7,21 @@ interface User {
   email: string;
   full_name: string;
   company_id?: string;
+  role?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  loading: boolean; // Alias for isLoading
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => void;
+  signOut: () => void; // Alias for logout
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string, token?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -25,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -39,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Verify token is still valid by fetching current user
         const currentUser = await apiService.getCurrentUser();
         setUser(currentUser);
+        setIsAdmin(currentUser.role === 'admin');
       } catch (error) {
         console.error('Token validation failed:', error);
         logout();
@@ -51,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await apiService.login(email, password);
       setUser(data.user);
+      setIsAdmin(data.user.role === 'admin');
       toast.success('Login realizado com sucesso!');
     } catch (error: any) {
       const message = error.response?.data?.error || 'Erro ao fazer login';
@@ -77,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
     setUser(null);
+    setIsAdmin(false);
     toast.info('Você saiu da sua conta');
   };
 
@@ -95,9 +104,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const currentUser = await apiService.getCurrentUser();
       setUser(currentUser);
+      setIsAdmin(currentUser.role === 'admin');
       localStorage.setItem('user', JSON.stringify(currentUser));
     } catch (error) {
       console.error('Failed to refresh user:', error);
+    }
+  };
+
+  const updatePassword = async (newPassword: string, token?: string) => {
+    try {
+      // If token is provided, use it (for reset password flow)
+      // Otherwise, user is logged in and changing password
+      if (token) {
+        await apiService.updatePassword(token, newPassword);
+      } else {
+        // For logged-in users, we'd need a different endpoint
+        // For now, just show error if no token
+        throw new Error('Token de redefinição não encontrado');
+      }
+      toast.success('Senha atualizada com sucesso!');
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.message || 'Erro ao atualizar senha';
+      toast.error(message);
+      throw error;
     }
   };
 
@@ -107,10 +136,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isLoading,
+        loading: isLoading, // Alias
+        isAdmin,
         login,
         register,
         logout,
+        signOut: logout, // Alias
         resetPassword,
+        updatePassword,
         refreshUser,
       }}
     >
