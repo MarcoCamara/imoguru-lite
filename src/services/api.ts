@@ -1,231 +1,406 @@
-import axios, { AxiosInstance } from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { supabase } from '@/integrations/supabase/client';
 
 class ApiService {
-  private api: AxiosInstance;
-
-  constructor() {
-    this.api = axios.create({
-      baseURL: API_BASE_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Add token to requests
-    this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
-
-    // Handle token expiration
-    this.api.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user');
-          window.location.href = '/auth';
-        }
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  // Auth endpoints
-  async register(email: string, password: string, full_name: string) {
-    const response = await this.api.post('/auth/register', { email, password, full_name });
-    return response.data;
-  }
-
-  async login(email: string, password: string) {
-    const response = await this.api.post('/auth/login', { email, password });
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
-    return response.data;
-  }
-
-  async resetPassword(email: string) {
-    const response = await this.api.post('/auth/reset-password', { email });
-    return response.data;
-  }
-
-  async updatePassword(token: string, password: string) {
-    const response = await this.api.post('/auth/update-password', { token, password });
-    return response.data;
-  }
-
   // User endpoints
   async getCurrentUser() {
-    const response = await this.api.get('/users/me');
-    return response.data;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    const { data: roles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    if (rolesError) throw rolesError;
+
+    return {
+      ...profile,
+      roles: roles?.map(r => r.role) || [],
+    };
   }
 
   async updateProfile(data: any) {
-    const response = await this.api.put('/users/me', data);
-    return response.data;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data: updated, error } = await supabase
+      .from('profiles')
+      .update(data)
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return updated;
   }
 
   async getUsers() {
-    const response = await this.api.get('/users');
-    return response.data;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+
+    if (error) throw error;
+
+    // Para cada usuário, buscar suas roles
+    const usersWithRoles = await Promise.all(
+      data.map(async (profile) => {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', profile.id);
+
+        return {
+          ...profile,
+          roles: roles?.map(r => r.role) || [],
+        };
+      })
+    );
+
+    return usersWithRoles;
   }
 
   async deleteUser(userId: string) {
-    const response = await this.api.delete(`/users/${userId}`);
-    return response.data;
+    // Não podemos deletar usuários do auth.users, apenas desativar
+    // Por enquanto apenas retornamos erro
+    throw new Error('User deletion not supported through this method');
   }
 
   async updateUserRole(userId: string, role: string) {
-    const response = await this.api.put(`/users/${userId}/role`, { role });
-    return response.data;
+    // Remover roles antigas
+    const { error: deleteError } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    if (deleteError) throw deleteError;
+
+    // Adicionar nova role
+    const { error: insertError } = await supabase
+      .from('user_roles')
+      .insert([{ user_id: userId, role: role as any }]);
+
+    if (insertError) throw insertError;
+
+    return { success: true };
   }
 
   // Properties endpoints
   async getProperties(filters?: any) {
-    const response = await this.api.get('/properties', { params: filters });
-    return response.data;
+    let query = supabase
+      .from('properties')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (filters) {
+      if (filters.status) query = query.eq('status', filters.status);
+      if (filters.purpose) query = query.eq('purpose', filters.purpose);
+      if (filters.property_type) query = query.eq('property_type', filters.property_type);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
   }
 
   async getProperty(id: string) {
-    const response = await this.api.get(`/properties/${id}`);
-    return response.data;
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async createProperty(data: any) {
-    const response = await this.api.post('/properties', data);
-    return response.data;
+    const { data: property, error } = await supabase
+      .from('properties')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return property;
   }
 
   async updateProperty(id: string, data: any) {
-    const response = await this.api.put(`/properties/${id}`, data);
-    return response.data;
+    const { data: property, error } = await supabase
+      .from('properties')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return property;
   }
 
   async deleteProperty(id: string) {
-    const response = await this.api.delete(`/properties/${id}`);
-    return response.data;
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
   }
 
   // Companies endpoints
   async getCompanies() {
-    const response = await this.api.get('/companies');
-    return response.data;
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*');
+
+    if (error) throw error;
+    return data;
   }
 
   async getCompany(id: string) {
-    const response = await this.api.get(`/companies/${id}`);
-    return response.data;
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async createCompany(data: any) {
-    const response = await this.api.post('/companies', data);
-    return response.data;
+    const { data: company, error } = await supabase
+      .from('companies')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return company;
   }
 
   async updateCompany(id: string, data: any) {
-    const response = await this.api.put(`/companies/${id}`, data);
-    return response.data;
+    const { data: company, error } = await supabase
+      .from('companies')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return company;
   }
 
   async deleteCompany(id: string) {
-    const response = await this.api.delete(`/companies/${id}`);
-    return response.data;
+    const { error } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
   }
 
   // Templates endpoints
   async getShareTemplates() {
-    const response = await this.api.get('/templates/share');
-    return response.data;
+    const { data, error } = await supabase
+      .from('share_templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 
   async getPrintTemplates() {
-    const response = await this.api.get('/templates/print');
-    return response.data;
+    const { data, error } = await supabase
+      .from('print_templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 
   async getAuthorizationTemplates() {
-    const response = await this.api.get('/templates/authorization');
-    return response.data;
+    const { data, error } = await supabase
+      .from('authorization_templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 
   async createTemplate(type: string, data: any) {
-    const response = await this.api.post(`/templates/${type}`, data);
-    return response.data;
+    const table = `${type}_templates` as any;
+    const { data: template, error } = await supabase
+      .from(table)
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return template;
   }
 
   async updateTemplate(type: string, id: string, data: any) {
-    const response = await this.api.put(`/templates/${type}/${id}`, data);
-    return response.data;
+    const table = `${type}_templates` as any;
+    const { data: template, error } = await supabase
+      .from(table)
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return template;
   }
 
   async deleteTemplate(type: string, id: string) {
-    const response = await this.api.delete(`/templates/${type}/${id}`);
-    return response.data;
+    const table = `${type}_templates` as any;
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
   }
 
-  // Email endpoints
+  // Email endpoints - seria necessário criar edge function
   async sendPropertyEmail(propertyId: string, recipients: string[]) {
-    const response = await this.api.post('/email/send-property', { propertyId, recipients });
-    return response.data;
+    throw new Error('Email sending not yet implemented');
   }
 
-  // Upload endpoints
+  // Upload endpoints - usar Supabase Storage
   async uploadPropertyImages(propertyId: string, files: File[]) {
-    const formData = new FormData();
-    files.forEach(file => formData.append('images', file));
-    
-    const response = await this.api.post(`/upload/property-images/${propertyId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${propertyId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('property-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(fileName);
+
+      uploadedUrls.push(data.publicUrl);
+
+      // Salvar referência no banco
+      await supabase.from('property_images').insert({
+        property_id: propertyId,
+        url: data.publicUrl,
+      });
+    }
+
+    return { urls: uploadedUrls };
   }
 
   async uploadPropertyVideo(propertyId: string, file: File, title?: string) {
-    const formData = new FormData();
-    formData.append('video', file);
-    if (title) formData.append('title', title);
-    
-    const response = await this.api.post(`/upload/property-videos/${propertyId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${propertyId}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('property-videos')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('property-videos')
+      .getPublicUrl(fileName);
+
+    // Salvar referência no banco
+    await supabase.from('property_videos').insert({
+      property_id: propertyId,
+      url: data.publicUrl,
+      title: title || file.name,
     });
-    return response.data;
+
+    return { url: data.publicUrl };
   }
 
   async uploadPropertyDocuments(propertyId: string, files: File[], documentType: string) {
-    const formData = new FormData();
-    files.forEach(file => formData.append('documents', file));
-    formData.append('document_type', documentType);
-    
-    const response = await this.api.post(`/upload/property-documents/${propertyId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${propertyId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('property-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('property-documents')
+        .getPublicUrl(fileName);
+
+      uploadedUrls.push(data.publicUrl);
+
+      // Salvar referência no banco
+      await supabase.from('property_documents').insert({
+        property_id: propertyId,
+        file_url: data.publicUrl,
+        file_name: file.name,
+        document_type: documentType,
+      });
+    }
+
+    return { urls: uploadedUrls };
   }
 
   async uploadCompanyLogo(companyId: string, file: File) {
-    const formData = new FormData();
-    formData.append('logo', file);
-    
-    const response = await this.api.post(`/upload/company-logos/${companyId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${companyId}/logo.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('company-logos')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('company-logos')
+      .getPublicUrl(fileName);
+
+    // Atualizar a empresa com a URL do logo
+    await supabase
+      .from('companies')
+      .update({ logo_url: data.publicUrl })
+      .eq('id', companyId);
+
+    return { url: data.publicUrl };
   }
 
   // File download endpoints
   getPropertyDocumentUrl(filename: string) {
-    return `${API_BASE_URL}/files/property-documents/${filename}`;
+    const { data } = supabase.storage
+      .from('property-documents')
+      .getPublicUrl(filename);
+    return data.publicUrl;
   }
 
   getPropertyVideoUrl(filename: string) {
-    return `${API_BASE_URL}/files/property-videos/${filename}`;
+    const { data } = supabase.storage
+      .from('property-videos')
+      .getPublicUrl(filename);
+    return data.publicUrl;
   }
 }
 

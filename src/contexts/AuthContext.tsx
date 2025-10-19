@@ -1,25 +1,27 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiService } from '@/services/api';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 interface User {
   id: string;
   email: string;
   full_name: string;
   company_id?: string;
-  role?: string;
+  roles?: string[];
 }
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   loading: boolean; // Alias for isLoading
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
-  logout: () => void;
-  signOut: () => void; // Alias for logout
+  logout: () => Promise<void>;
+  signOut: () => Promise<void>; // Alias for logout
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string, token?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -29,41 +31,93 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const loadUserProfile = async (userId: string) => {
+    try {
+      // Buscar perfil do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem('auth_token');
+      if (profileError) throw profileError;
 
-    if (token) {
-      try {
-        // Always fetch current user from server to validate token and get roles
-        const currentUser = await apiService.getCurrentUser();
-        setUser(currentUser);
-        // Check if user has admin role (roles is an array)
-        setIsAdmin(Boolean(currentUser.roles?.includes('admin')));
-        localStorage.setItem('user', JSON.stringify(currentUser));
-      } catch (error) {
-        console.error('Token validation failed:', error);
-        logout();
-      }
+      // Buscar roles do usuário
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
+
+      const userRoles = roles?.map(r => r.role) || [];
+      const userData: User = {
+        id: userId,
+        email: profile?.email || '',
+        full_name: profile?.full_name || '',
+        company_id: profile?.company_id || undefined,
+        roles: userRoles,
+      };
+
+      setUser(userData);
+      setIsAdmin(userRoles.includes('admin'));
+    } catch (error) {
+      console.error('Error loading user profile:', error);
     }
-    setIsLoading(false);
   };
+
+  useEffect(() => {
+    // Configurar listener de mudanças de autenticação PRIMEIRO
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event);
+        setSession(session);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            loadUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      }
+    );
+
+    // DEPOIS verificar sessão existente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user.id).finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const data = await apiService.login(email, password);
-      setUser(data.user);
-      // Fetch complete user data with roles
-      await refreshUser();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        await loadUserProfile(data.user.id);
+      }
+      
       toast.success('Login realizado com sucesso!');
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Erro ao fazer login';
+      console.error('Login error:', error);
+      const message = error.message || 'Erro ao fazer login';
       toast.error(message);
       throw error;
     }
@@ -71,32 +125,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, fullName: string) => {
     try {
-      const data = await apiService.register(email, password, fullName);
-      setUser(data.user);
-      localStorage.setItem('auth_token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        await loadUserProfile(data.user.id);
+      }
+      
       toast.success('Cadastro realizado com sucesso!');
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Erro ao fazer cadastro';
+      console.error('Register error:', error);
+      const message = error.message || 'Erro ao fazer cadastro';
       toast.error(message);
       throw error;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setIsAdmin(false);
-    toast.info('Você saiu da sua conta');
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      toast.info('Você saiu da sua conta');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Erro ao fazer logout');
+    }
   };
 
   const resetPassword = async (email: string) => {
     try {
-      await apiService.resetPassword(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
       toast.success('Email de recuperação enviado!');
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Erro ao enviar email';
+      const message = error.message || 'Erro ao enviar email';
       toast.error(message);
       throw error;
     }
@@ -104,11 +183,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      const currentUser = await apiService.getCurrentUser();
-      setUser(currentUser);
-      // Check if user has admin role (roles is an array)
-      setIsAdmin(Boolean(currentUser.roles?.includes('admin')));
-      localStorage.setItem('user', JSON.stringify(currentUser));
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        await loadUserProfile(supabaseUser.id);
+      }
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
@@ -116,18 +194,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updatePassword = async (newPassword: string, token?: string) => {
     try {
-      // If token is provided, use it (for reset password flow)
-      // Otherwise, user is logged in and changing password
-      if (token) {
-        await apiService.updatePassword(token, newPassword);
-      } else {
-        // For logged-in users, we'd need a different endpoint
-        // For now, just show error if no token
-        throw new Error('Token de redefinição não encontrado');
-      }
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      
+      if (error) throw error;
       toast.success('Senha atualizada com sucesso!');
     } catch (error: any) {
-      const message = error.response?.data?.error || error.message || 'Erro ao atualizar senha';
+      const message = error.message || 'Erro ao atualizar senha';
       toast.error(message);
       throw error;
     }
@@ -137,6 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        session,
         isAuthenticated: !!user,
         isLoading,
         loading: isLoading, // Alias
