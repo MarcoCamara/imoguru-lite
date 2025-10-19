@@ -215,4 +215,79 @@ router.post('/update-password',
   }
 );
 
+// Bootstrap Admin - Emergency access recovery
+// Protected by BOOTSTRAP_SECRET for one-time setup
+router.post('/bootstrap-admin', async (req, res) => {
+  try {
+    const { email, password, full_name } = req.body;
+    const bootstrapSecret = req.headers['x-bootstrap-secret'];
+
+    // Validate bootstrap secret
+    if (!process.env.BOOTSTRAP_SECRET || bootstrapSecret !== process.env.BOOTSTRAP_SECRET) {
+      return res.status(403).json({ error: 'Invalid bootstrap secret' });
+    }
+
+    // Validate input
+    if (!email || !password || !full_name) {
+      return res.status(400).json({ error: 'Email, password, and full_name are required' });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Check if user exists
+    const existingUser = await db.query(
+      'SELECT id FROM profiles WHERE email = $1',
+      [email]
+    );
+
+    let userId;
+
+    if (existingUser.rows.length > 0) {
+      // User exists - update password
+      userId = existingUser.rows[0].id;
+      
+      await db.query(
+        `INSERT INTO user_passwords (user_id, password_hash)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id) DO UPDATE SET password_hash = $2, updated_at = now()`,
+        [userId, passwordHash]
+      );
+    } else {
+      // Create new user
+      const newUser = await db.query(
+        `INSERT INTO profiles (email, full_name)
+         VALUES ($1, $2)
+         RETURNING id`,
+        [email, full_name]
+      );
+      
+      userId = newUser.rows[0].id;
+
+      // Insert password
+      await db.query(
+        'INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)',
+        [userId, passwordHash]
+      );
+    }
+
+    // Ensure admin role exists
+    await db.query(
+      `INSERT INTO user_roles (user_id, role)
+       VALUES ($1, 'admin')
+       ON CONFLICT (user_id, role) DO NOTHING`,
+      [userId]
+    );
+
+    res.json({ 
+      message: 'Bootstrap admin created/updated successfully',
+      userId,
+      email 
+    });
+  } catch (error) {
+    console.error('Bootstrap admin error:', error);
+    res.status(500).json({ error: 'Failed to bootstrap admin' });
+  }
+});
+
 module.exports = router;

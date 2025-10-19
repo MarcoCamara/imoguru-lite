@@ -68,7 +68,7 @@ class ApiService {
   }
 
   async updateProfile(data: any) {
-    const response = await this.api.put('/users/profile', data);
+    const response = await this.api.put('/users/me', data);
     return response.data;
   }
 

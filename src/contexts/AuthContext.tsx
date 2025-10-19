@@ -38,14 +38,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAuth = async () => {
     const token = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('user');
 
-    if (token && storedUser) {
+    if (token) {
       try {
-        // Verify token is still valid by fetching current user
+        // Always fetch current user from server to validate token and get roles
         const currentUser = await apiService.getCurrentUser();
         setUser(currentUser);
-        setIsAdmin(currentUser.role === 'admin');
+        // Check if user has admin role (roles is an array)
+        setIsAdmin(Boolean(currentUser.roles?.includes('admin')));
+        localStorage.setItem('user', JSON.stringify(currentUser));
       } catch (error) {
         console.error('Token validation failed:', error);
         logout();
@@ -58,7 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await apiService.login(email, password);
       setUser(data.user);
-      setIsAdmin(data.user.role === 'admin');
+      // Fetch complete user data with roles
+      await refreshUser();
       toast.success('Login realizado com sucesso!');
     } catch (error: any) {
       const message = error.response?.data?.error || 'Erro ao fazer login';
@@ -104,7 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const currentUser = await apiService.getCurrentUser();
       setUser(currentUser);
-      setIsAdmin(currentUser.role === 'admin');
+      // Check if user has admin role (roles is an array)
+      setIsAdmin(Boolean(currentUser.roles?.includes('admin')));
       localStorage.setItem('user', JSON.stringify(currentUser));
     } catch (error) {
       console.error('Failed to refresh user:', error);
