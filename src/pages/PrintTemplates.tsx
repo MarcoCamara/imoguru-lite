@@ -12,6 +12,8 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Trash2, Eye } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import TemplatePreview from '@/components/TemplatePreview';
+import { FormatSelector } from '@/components/template-editor/FormatSelector';
+import { TemplatePreviewLive } from '@/components/template-editor/TemplatePreviewLive';
 
 interface PrintTemplate {
   id: string;
@@ -28,6 +30,8 @@ export default function PrintTemplates() {
   const [editingTemplate, setEditingTemplate] = useState<PrintTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [formatWidth, setFormatWidth] = useState(2480);
+  const [formatHeight, setFormatHeight] = useState(3508);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -159,14 +163,15 @@ export default function PrintTemplates() {
         </div>
 
         {editingTemplate ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{editingTemplate.id ? 'Editar Template' : 'Novo Template'}</CardTitle>
-              <CardDescription>
-                Use placeholders como {'{{title}}'}, {'{{code}}'}, {'{{qrcode}}'}, {'{{images}}'}, etc.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{editingTemplate.id ? 'Editar Template' : 'Novo Template'}</CardTitle>
+                <CardDescription>
+                  Use placeholders como {'{{title}}'}, {'{{code}}'}, {'{{qrcode}}'}, {'{{images}}'}, etc.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="name">Nome do Template</Label>
                 <Input
@@ -217,6 +222,15 @@ export default function PrintTemplates() {
                 </Tabs>
               </div>
 
+              <FormatSelector
+                width={formatWidth}
+                height={formatHeight}
+                onChange={(w, h) => {
+                  setFormatWidth(w);
+                  setFormatHeight(h);
+                }}
+              />
+
               <div className="flex gap-2">
                 <Button onClick={handleSaveTemplate}>Salvar Template</Button>
                 <Button variant="outline" onClick={() => setEditingTemplate(null)}>
@@ -225,6 +239,16 @@ export default function PrintTemplates() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="sticky top-8">
+            <TemplatePreviewLive
+              content={editingTemplate.content}
+              width={formatWidth}
+              height={formatHeight}
+              type="print"
+            />
+          </div>
+        </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {templates.map((template) => (

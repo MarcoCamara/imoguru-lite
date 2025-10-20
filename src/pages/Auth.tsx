@@ -50,10 +50,10 @@ export default function Auth() {
       const { data } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['logo_url', 'app_name']);
+        .in('setting_key', ['app_logo', 'app_name']);
       
       if (data) {
-        const logoSetting = data.find(s => s.setting_key === 'logo_url');
+        const logoSetting = data.find(s => s.setting_key === 'app_logo');
         const nameSetting = data.find(s => s.setting_key === 'app_name');
         
         if (logoSetting?.setting_value) {

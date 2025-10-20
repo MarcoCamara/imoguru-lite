@@ -394,7 +394,7 @@ export default function UserManagement() {
                 Novo Usuário
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Criar Novo Usuário</DialogTitle>
                 <DialogDescription>
@@ -402,25 +402,27 @@ export default function UserManagement() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="user_email">E-mail *</Label>
-                  <Input
-                    id="user_email"
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="usuario@exemplo.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="user_password">Senha *</Label>
-                  <Input
-                    id="user_password"
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    placeholder="Mínimo 6 caracteres"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="user_email">E-mail *</Label>
+                    <Input
+                      id="user_email"
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      placeholder="usuario@exemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user_password">Senha *</Label>
+                    <Input
+                      id="user_password"
+                      type="password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="user_name">Nome Completo *</Label>
@@ -464,23 +466,25 @@ export default function UserManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="user_phone">Telefone</Label>
-                  <Input
-                    id="user_phone"
-                    value={newUser.phone}
-                    onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="user_creci">CRECI</Label>
-                  <Input
-                    id="user_creci"
-                    value={newUser.creci}
-                    onChange={(e) => setNewUser({ ...newUser, creci: e.target.value })}
-                    placeholder="Número do CRECI"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="user_phone">Telefone</Label>
+                    <Input
+                      id="user_phone"
+                      value={newUser.phone}
+                      onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user_creci">CRECI</Label>
+                    <Input
+                      id="user_creci"
+                      value={newUser.creci}
+                      onChange={(e) => setNewUser({ ...newUser, creci: e.target.value })}
+                      placeholder="Número do CRECI"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="user_cep">CEP</Label>
@@ -651,7 +655,7 @@ export default function UserManagement() {
 
       {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
             <DialogDescription>

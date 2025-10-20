@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplatePreview from '@/components/TemplatePreview';
 import RichTextEditor from '@/components/RichTextEditor';
+import { FormatSelector } from '@/components/template-editor/FormatSelector';
+import { TemplatePreviewLive } from '@/components/template-editor/TemplatePreviewLive';
 
 interface ShareTemplate {
   id: string;
@@ -36,6 +38,8 @@ export default function ShareTemplates() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<ShareTemplate | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [formatWidth, setFormatWidth] = useState(1080);
+  const [formatHeight, setFormatHeight] = useState(1080);
 
   const availableFields = [
     'title', 'code', 'purpose', 'property_type', 'status',
@@ -266,7 +270,7 @@ export default function ShareTemplates() {
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTemplate?.id === 'new' ? 'Novo Template' : 'Editar Template'}
@@ -274,7 +278,8 @@ export default function ShareTemplates() {
             </DialogHeader>
 
             {editingTemplate && (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nome do Template</Label>
                   <Input
@@ -410,11 +415,30 @@ export default function ShareTemplates() {
                   />
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleSave}>Salvar</Button>
+                  <FormatSelector
+                    width={formatWidth}
+                    height={formatHeight}
+                    onChange={(w, h) => {
+                      setFormatWidth(w);
+                      setFormatHeight(h);
+                    }}
+                  />
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSave}>Salvar</Button>
+                  </div>
+                </div>
+
+                <div className="sticky top-0">
+                  <TemplatePreviewLive
+                    content={editingTemplate.message_format}
+                    width={formatWidth}
+                    height={formatHeight}
+                    type="share"
+                  />
                 </div>
               </div>
             )}

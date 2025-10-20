@@ -231,7 +231,7 @@ export default function CompanyManagement() {
                 Nova Empresa
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Criar Nova Empresa</DialogTitle>
                 <DialogDescription>
@@ -248,41 +248,46 @@ export default function CompanyManagement() {
                     placeholder="Digite o nome da empresa"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="company_phone">Telefone</Label>
-                  <Input
-                    id="company_phone"
-                    value={newCompany.phone}
-                    onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
-                    placeholder="(00) 0000-0000"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company_phone">Telefone</Label>
+                    <Input
+                      id="company_phone"
+                      value={newCompany.phone}
+                      onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                      placeholder="(00) 0000-0000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company_whatsapp">WhatsApp</Label>
+                    <Input
+                      id="company_whatsapp"
+                      value={newCompany.whatsapp}
+                      onChange={(e) => setNewCompany({ ...newCompany, whatsapp: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="company_whatsapp">WhatsApp</Label>
-                  <Input
-                    id="company_whatsapp"
-                    value={newCompany.whatsapp}
-                    onChange={(e) => setNewCompany({ ...newCompany, whatsapp: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="company_facebook">Facebook</Label>
-                  <Input
-                    id="company_facebook"
-                    value={newCompany.facebook}
-                    onChange={(e) => setNewCompany({ ...newCompany, facebook: e.target.value })}
-                    placeholder="Link do Facebook"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="company_instagram">Instagram</Label>
-                  <Input
-                    id="company_instagram"
-                    value={newCompany.instagram}
-                    onChange={(e) => setNewCompany({ ...newCompany, instagram: e.target.value })}
-                    placeholder="@usuario"
-                  />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company_facebook">Facebook</Label>
+                    <Input
+                      id="company_facebook"
+                      value={newCompany.facebook}
+                      onChange={(e) => setNewCompany({ ...newCompany, facebook: e.target.value })}
+                      placeholder="URL do Facebook"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company_instagram">Instagram</Label>
+                    <Input
+                      id="company_instagram"
+                      value={newCompany.instagram}
+                      onChange={(e) => setNewCompany({ ...newCompany, instagram: e.target.value })}
+                      placeholder="@usuario"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="company_cep">CEP</Label>

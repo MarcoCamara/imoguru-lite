@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplatePreview from '@/components/TemplatePreview';
 import RichTextEditor from '@/components/RichTextEditor';
+import { FormatSelector } from '@/components/template-editor/FormatSelector';
+import { TemplatePreviewLive } from '@/components/template-editor/TemplatePreviewLive';
 
 interface AuthTemplate {
   id: string;
@@ -31,6 +33,8 @@ export default function AuthorizationTemplates() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<AuthTemplate | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [formatWidth, setFormatWidth] = useState(2480);
+  const [formatHeight, setFormatHeight] = useState(3508);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -261,7 +265,7 @@ Assinatura do Proprietário`,
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTemplate?.id === 'new' ? 'Novo Template' : 'Editar Template'}
@@ -269,7 +273,8 @@ Assinatura do Proprietário`,
             </DialogHeader>
 
             {editingTemplate && (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nome do Template</Label>
                   <Input
@@ -332,6 +337,15 @@ Assinatura do Proprietário`,
                   />
                 </div>
 
+                <FormatSelector
+                  width={formatWidth}
+                  height={formatHeight}
+                  onChange={(w, h) => {
+                    setFormatWidth(w);
+                    setFormatHeight(h);
+                  }}
+                />
+
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancelar
@@ -339,6 +353,16 @@ Assinatura do Proprietário`,
                   <Button onClick={handleSave}>Salvar</Button>
                 </div>
               </div>
+
+              <div className="sticky top-0">
+                <TemplatePreviewLive
+                  content={editingTemplate.content}
+                  width={formatWidth}
+                  height={formatHeight}
+                  type="authorization"
+                />
+              </div>
+            </div>
             )}
           </DialogContent>
         </Dialog>
