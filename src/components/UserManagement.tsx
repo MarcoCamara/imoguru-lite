@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, User, KeyRound, Edit } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, KeyRound, Edit, Copy, Archive } from 'lucide-react';
+import { fetchCEP } from '@/lib/cepUtils';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,15 @@ export default function UserManagement() {
     fullName: '',
     companyId: undefined as string | undefined,
     role: 'user',
+    phone: '',
+    creci: '',
+    cep: '',
+    street: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: '',
+    state: '',
   });
 
   useEffect(() => {
@@ -109,12 +119,21 @@ export default function UserManagement() {
       if (authError) throw authError;
 
       if (authData.user) {
-        if (newUser.companyId) {
-          await supabase
-            .from('profiles')
-            .update({ company_id: newUser.companyId })
-            .eq('id', authData.user.id);
-        }
+        await supabase
+          .from('profiles')
+          .update({ 
+            company_id: newUser.companyId,
+            phone: newUser.phone,
+            creci: newUser.creci,
+            cep: newUser.cep,
+            street: newUser.street,
+            number: newUser.number,
+            complement: newUser.complement,
+            neighborhood: newUser.neighborhood,
+            city: newUser.city,
+            state: newUser.state,
+          })
+          .eq('id', authData.user.id);
 
         await supabase
           .from('user_roles')
@@ -135,6 +154,15 @@ export default function UserManagement() {
         fullName: '',
         companyId: undefined,
         role: 'user',
+        phone: '',
+        creci: '',
+        cep: '',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
       });
       setIsDialogOpen(false);
       loadData();
@@ -234,6 +262,119 @@ export default function UserManagement() {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário deletado com sucesso!',
+      });
+
+      loadData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível deletar o usuário.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDuplicateUser = async (user: UserProfile) => {
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!profileData) throw new Error('Dados do usuário não encontrados');
+
+      const { error: authError } = await supabase.auth.signUp({
+        email: `copia_${Date.now()}_${profileData.email}`,
+        password: Math.random().toString(36).slice(-12),
+        options: {
+          data: {
+            full_name: `${profileData.full_name} (Cópia)`,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário duplicado! Altere o email e senha do novo usuário.',
+      });
+
+      loadData();
+    } catch (error: any) {
+      console.error('Error duplicating user:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível duplicar o usuário.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleArchiveUser = async (userId: string) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      const archived = (user as any)?.archived || false;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ archived: !archived })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: archived ? 'Usuário desarquivado!' : 'Usuário arquivado!',
+      });
+
+      loadData();
+    } catch (error: any) {
+      console.error('Error archiving user:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível arquivar o usuário.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCepChange = async (cep: string) => {
+    setNewUser({ ...newUser, cep });
+    
+    if (cep.replace(/\D/g, '').length === 8) {
+      const data = await fetchCEP(cep);
+      if (data) {
+        setNewUser({
+          ...newUser,
+          cep,
+          street: data.street,
+          neighborhood: data.neighborhood,
+          city: data.city,
+          state: data.state,
+        });
+      }
+    }
+  };
+
   if (loading) {
     return <div>Carregando usuários...</div>;
   }
@@ -323,6 +464,87 @@ export default function UserManagement() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label htmlFor="user_phone">Telefone</Label>
+                  <Input
+                    id="user_phone"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="user_creci">CRECI</Label>
+                  <Input
+                    id="user_creci"
+                    value={newUser.creci}
+                    onChange={(e) => setNewUser({ ...newUser, creci: e.target.value })}
+                    placeholder="Número do CRECI"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="user_cep">CEP</Label>
+                  <Input
+                    id="user_cep"
+                    value={newUser.cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="00000-000"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="user_street">Rua</Label>
+                    <Input
+                      id="user_street"
+                      value={newUser.street}
+                      onChange={(e) => setNewUser({ ...newUser, street: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user_number">Número</Label>
+                    <Input
+                      id="user_number"
+                      value={newUser.number}
+                      onChange={(e) => setNewUser({ ...newUser, number: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="user_complement">Complemento</Label>
+                  <Input
+                    id="user_complement"
+                    value={newUser.complement}
+                    onChange={(e) => setNewUser({ ...newUser, complement: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="user_neighborhood">Bairro</Label>
+                    <Input
+                      id="user_neighborhood"
+                      value={newUser.neighborhood}
+                      onChange={(e) => setNewUser({ ...newUser, neighborhood: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user_city">Cidade</Label>
+                    <Input
+                      id="user_city"
+                      value={newUser.city}
+                      onChange={(e) => setNewUser({ ...newUser, city: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="user_state">Estado</Label>
+                  <Input
+                    id="user_state"
+                    value={newUser.state}
+                    onChange={(e) => setNewUser({ ...newUser, state: e.target.value })}
+                    placeholder="UF"
+                    maxLength={2}
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -395,6 +617,30 @@ export default function UserManagement() {
                     title="Resetar senha"
                   >
                     <KeyRound className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleDuplicateUser(user)}
+                    title="Duplicar usuário"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleArchiveUser(user.id)}
+                    title="Arquivar usuário"
+                  >
+                    <Archive className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleDeleteUser(user.id)}
+                    title="Deletar usuário"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

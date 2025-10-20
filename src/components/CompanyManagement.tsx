@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Building2, Upload, Trash2, Plus } from 'lucide-react';
+import { fetchCEP } from '@/lib/cepUtils';
 import {
   Dialog,
   DialogContent,
@@ -26,9 +27,22 @@ interface Company {
 export default function CompanyManagement() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newCompanyName, setNewCompanyName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [newCompany, setNewCompany] = useState({
+    name: '',
+    phone: '',
+    whatsapp: '',
+    facebook: '',
+    instagram: '',
+    cep: '',
+    street: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+  });
 
   useEffect(() => {
     loadCompanies();
@@ -56,7 +70,7 @@ export default function CompanyManagement() {
   };
 
   const handleCreateCompany = async () => {
-    if (!newCompanyName.trim()) {
+    if (!newCompany.name.trim()) {
       toast({
         title: 'Erro',
         description: 'Digite o nome da empresa.',
@@ -68,7 +82,7 @@ export default function CompanyManagement() {
     try {
       const { error } = await supabase
         .from('companies')
-        .insert({ name: newCompanyName });
+        .insert(newCompany);
 
       if (error) throw error;
 
@@ -77,7 +91,20 @@ export default function CompanyManagement() {
         description: 'Empresa criada com sucesso!',
       });
 
-      setNewCompanyName('');
+      setNewCompany({
+        name: '',
+        phone: '',
+        whatsapp: '',
+        facebook: '',
+        instagram: '',
+        cep: '',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+      });
       setIsDialogOpen(false);
       loadCompanies();
     } catch (error) {
@@ -87,6 +114,24 @@ export default function CompanyManagement() {
         description: 'Não foi possível criar a empresa.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleCepChange = async (cep: string) => {
+    setNewCompany({ ...newCompany, cep });
+    
+    if (cep.replace(/\D/g, '').length === 8) {
+      const data = await fetchCEP(cep);
+      if (data) {
+        setNewCompany({
+          ...newCompany,
+          cep,
+          street: data.street,
+          neighborhood: data.neighborhood,
+          city: data.city,
+          state: data.state,
+        });
+      }
     }
   };
 
@@ -193,14 +238,113 @@ export default function CompanyManagement() {
                   Adicione uma nova empresa ao sistema
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
                 <div>
-                  <Label htmlFor="company_name">Nome da Empresa</Label>
+                  <Label htmlFor="company_name">Nome da Empresa *</Label>
                   <Input
                     id="company_name"
-                    value={newCompanyName}
-                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    value={newCompany.name}
+                    onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                     placeholder="Digite o nome da empresa"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company_phone">Telefone</Label>
+                  <Input
+                    id="company_phone"
+                    value={newCompany.phone}
+                    onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                    placeholder="(00) 0000-0000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company_whatsapp">WhatsApp</Label>
+                  <Input
+                    id="company_whatsapp"
+                    value={newCompany.whatsapp}
+                    onChange={(e) => setNewCompany({ ...newCompany, whatsapp: e.target.value })}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company_facebook">Facebook</Label>
+                  <Input
+                    id="company_facebook"
+                    value={newCompany.facebook}
+                    onChange={(e) => setNewCompany({ ...newCompany, facebook: e.target.value })}
+                    placeholder="Link do Facebook"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company_instagram">Instagram</Label>
+                  <Input
+                    id="company_instagram"
+                    value={newCompany.instagram}
+                    onChange={(e) => setNewCompany({ ...newCompany, instagram: e.target.value })}
+                    placeholder="@usuario"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company_cep">CEP</Label>
+                  <Input
+                    id="company_cep"
+                    value={newCompany.cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="00000-000"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="company_street">Rua</Label>
+                    <Input
+                      id="company_street"
+                      value={newCompany.street}
+                      onChange={(e) => setNewCompany({ ...newCompany, street: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company_number">Número</Label>
+                    <Input
+                      id="company_number"
+                      value={newCompany.number}
+                      onChange={(e) => setNewCompany({ ...newCompany, number: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="company_complement">Complemento</Label>
+                  <Input
+                    id="company_complement"
+                    value={newCompany.complement}
+                    onChange={(e) => setNewCompany({ ...newCompany, complement: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company_neighborhood">Bairro</Label>
+                    <Input
+                      id="company_neighborhood"
+                      value={newCompany.neighborhood}
+                      onChange={(e) => setNewCompany({ ...newCompany, neighborhood: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company_city">Cidade</Label>
+                    <Input
+                      id="company_city"
+                      value={newCompany.city}
+                      onChange={(e) => setNewCompany({ ...newCompany, city: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="company_state">Estado</Label>
+                  <Input
+                    id="company_state"
+                    value={newCompany.state}
+                    onChange={(e) => setNewCompany({ ...newCompany, state: e.target.value })}
+                    placeholder="UF"
+                    maxLength={2}
                   />
                 </div>
               </div>

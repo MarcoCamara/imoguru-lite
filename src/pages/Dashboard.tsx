@@ -420,15 +420,6 @@ export default function Dashboard() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShareMultiple}
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Compartilhar
-                {selectedProperties.length > 0 && ` (${selectedProperties.length})`}
-              </Button>
               {selectedProperties.length > 0 && (
                 <PrintTemplate 
                   properties={properties.filter(p => selectedProperties.includes(p.id))} 

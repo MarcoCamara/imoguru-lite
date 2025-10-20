@@ -61,25 +61,58 @@ export type Database = {
       }
       companies: {
         Row: {
+          cep: string | null
+          city: string | null
+          complement: string | null
           created_at: string | null
+          facebook: string | null
           id: string
+          instagram: string | null
           logo_url: string | null
           name: string
+          neighborhood: string | null
+          number: string | null
+          phone: string | null
+          state: string | null
+          street: string | null
           updated_at: string | null
+          whatsapp: string | null
         }
         Insert: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
           created_at?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           logo_url?: string | null
           name: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Update: {
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
           created_at?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           logo_url?: string | null
           name?: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -147,6 +180,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          archived: boolean | null
           cep: string | null
           city: string | null
           company_id: string | null
@@ -169,6 +203,7 @@ export type Database = {
           user_type: string | null
         }
         Insert: {
+          archived?: boolean | null
           cep?: string | null
           city?: string | null
           company_id?: string | null
@@ -191,6 +226,7 @@ export type Database = {
           user_type?: string | null
         }
         Update: {
+          archived?: boolean | null
           cep?: string | null
           city?: string | null
           company_id?: string | null

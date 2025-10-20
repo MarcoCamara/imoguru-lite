@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +16,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 
 export default function Auth() {
   const { login, register, resetPassword, isAuthenticated } = useAuth();
@@ -25,6 +25,8 @@ export default function Auth() {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
+  const [appName, setAppName] = useState('ImoGuru');
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -42,6 +44,29 @@ export default function Auth() {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    const fetchSystemSettings = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['logo_url', 'app_name']);
+      
+      if (data) {
+        const logoSetting = data.find(s => s.setting_key === 'logo_url');
+        const nameSetting = data.find(s => s.setting_key === 'app_name');
+        
+        if (logoSetting?.setting_value) {
+          setSystemLogo(String(logoSetting.setting_value));
+        }
+        if (nameSetting?.setting_value) {
+          setAppName(String(nameSetting.setting_value));
+        }
+      }
+    };
+    
+    fetchSystemSettings();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,8 +113,16 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          <Building2 className="h-12 w-12 text-primary mr-3" />
-          <h1 className="text-4xl font-bold text-foreground">ImoGuru</h1>
+          {systemLogo ? (
+            <img 
+              src={systemLogo} 
+              alt={appName}
+              className="h-16 w-auto object-contain mr-3"
+            />
+          ) : (
+            <Building2 className="h-12 w-12 text-primary mr-3" />
+          )}
+          <h1 className="text-4xl font-bold text-foreground">{appName}</h1>
         </div>
 
         <Card>
