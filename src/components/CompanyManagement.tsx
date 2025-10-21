@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Building2, Upload, Trash2, Plus } from 'lucide-react';
+import { Building2, Upload, Trash2, Plus, Edit, Copy, Archive } from 'lucide-react';
 import { fetchCEP } from '@/lib/cepUtils';
+import { validateCNPJ, formatCNPJ } from '@/lib/validationUtils';
 import {
   Dialog,
   DialogContent,
@@ -29,12 +30,19 @@ export default function CompanyManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [newCompany, setNewCompany] = useState({
     name: '',
+    cnpj: '',
     phone: '',
     whatsapp: '',
     facebook: '',
     instagram: '',
+    website: '',
+    primary_color: '#8b5cf6',
+    secondary_color: '#3b82f6',
     cep: '',
     street: '',
     number: '',
@@ -79,12 +87,28 @@ export default function CompanyManagement() {
       return;
     }
 
+    if (newCompany.cnpj && !validateCNPJ(newCompany.cnpj)) {
+      toast({
+        title: 'Erro',
+        description: 'CNPJ inválido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('companies')
-        .insert(newCompany);
+        .insert(newCompany)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Fazer upload do logo se foi selecionado
+      if (logoFile && data) {
+        await handleLogoUpload(data.id, logoFile);
+      }
 
       toast({
         title: 'Sucesso',
@@ -93,10 +117,14 @@ export default function CompanyManagement() {
 
       setNewCompany({
         name: '',
+        cnpj: '',
         phone: '',
         whatsapp: '',
         facebook: '',
         instagram: '',
+        website: '',
+        primary_color: '#8b5cf6',
+        secondary_color: '#3b82f6',
         cep: '',
         street: '',
         number: '',

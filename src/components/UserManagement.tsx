@@ -24,6 +24,15 @@ interface UserProfile {
   email: string;
   full_name: string;
   company_id: string | null;
+  phone?: string;
+  creci?: string;
+  cep?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
   companies: {
     name: string;
   } | null;
@@ -239,6 +248,15 @@ export default function UserManagement() {
         .update({
           full_name: editingUser.full_name,
           company_id: editingUser.company_id,
+          phone: editingUser.phone,
+          creci: editingUser.creci,
+          cep: editingUser.cep,
+          street: editingUser.street,
+          number: editingUser.number,
+          complement: editingUser.complement,
+          neighborhood: editingUser.neighborhood,
+          city: editingUser.city,
+          state: editingUser.state,
         })
         .eq('id', editingUser.id);
 
@@ -262,12 +280,36 @@ export default function UserManagement() {
     }
   };
 
+  const handleEditCepChange = async (cep: string) => {
+    if (!editingUser) return;
+    
+    setEditingUser({ ...editingUser, cep });
+    
+    if (cep.replace(/\D/g, '').length === 8) {
+      const data = await fetchCEP(cep);
+      if (data) {
+        setEditingUser({
+          ...editingUser,
+          cep,
+          street: data.street,
+          neighborhood: data.neighborhood,
+          city: data.city,
+          state: data.state,
+        });
+      }
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
       return;
     }
 
     try {
+      // Primeiro deletar roles
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      
+      // Depois deletar perfil
       const { error } = await supabase
         .from('profiles')
         .delete()
