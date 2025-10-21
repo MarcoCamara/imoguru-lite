@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function ResetPassword() {
-  const { updatePassword } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -19,32 +19,41 @@ export default function ResetPassword() {
     confirmPassword: '',
   });
 
-  const token = searchParams.get('token');
+  // Supabase automaticamente lida com o token via hash fragment
+  useEffect(() => {
+    // Verificar se temos um recovery token no hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type !== 'recovery') {
+      toast.error('Link de redefinição inválido');
+      navigate('/auth');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!token) {
-      alert('Token de redefinição não encontrado. Por favor, use o link do email.');
-      return;
-    }
-    
     if (passwords.password !== passwords.confirmPassword) {
-      alert('As senhas não coincidem');
+      toast.error('As senhas não coincidem');
       return;
     }
 
     if (passwords.password.length < 6) {
-      alert('A senha deve ter no mínimo 6 caracteres');
+      toast.error('A senha deve ter no mínimo 6 caracteres');
       return;
     }
 
     setIsLoading(true);
     try {
-      await updatePassword(passwords.password, token);
+      const { error } = await supabase.auth.updateUser({ password: passwords.password });
+      if (error) throw error;
+      
+      toast.success('Senha atualizada com sucesso!');
       navigate('/auth');
-    } catch (error) {
-      // Error already shown by context
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      toast.error(error.message || 'Erro ao atualizar senha');
     } finally {
       setIsLoading(false);
     }

@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PROPERTY_TYPES } from '@/lib/propertyConstants';
+import { validateNumericField } from '@/lib/validationUtils';
+import { toast } from 'sonner';
 
 interface BasicInfoFormProps {
   formData: any;

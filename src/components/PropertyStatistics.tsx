@@ -171,9 +171,9 @@ export default function PropertyStatistics({ propertyId }: StatisticsProps) {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={shareData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ fontSize: 11 }} />
                 <Bar dataKey="value" fill="hsl(var(--primary))" />
               </BarChart>
             </ResponsiveContainer>
@@ -189,9 +189,9 @@ export default function PropertyStatistics({ propertyId }: StatisticsProps) {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={viewData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ fontSize: 11 }} />
                 <Bar dataKey="value" fill="hsl(var(--secondary))" />
               </BarChart>
             </ResponsiveContainer>
@@ -208,10 +208,10 @@ export default function PropertyStatistics({ propertyId }: StatisticsProps) {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={engagementData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip contentStyle={{ fontSize: 11 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="compartilhamentos" fill="hsl(var(--primary))" />
               <Bar dataKey="visualizações" fill="hsl(var(--secondary))" />
             </BarChart>

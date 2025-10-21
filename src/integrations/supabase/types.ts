@@ -63,6 +63,7 @@ export type Database = {
         Row: {
           cep: string | null
           city: string | null
+          cnpj: string | null
           complement: string | null
           created_at: string | null
           facebook: string | null
@@ -81,6 +82,7 @@ export type Database = {
         Insert: {
           cep?: string | null
           city?: string | null
+          cnpj?: string | null
           complement?: string | null
           created_at?: string | null
           facebook?: string | null
@@ -99,6 +101,7 @@ export type Database = {
         Update: {
           cep?: string | null
           city?: string | null
+          cnpj?: string | null
           complement?: string | null
           created_at?: string | null
           facebook?: string | null
@@ -727,6 +730,54 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_share_history: {
+        Row: {
+          contact_data: Json | null
+          created_at: string | null
+          id: string
+          platforms: string[]
+          property_id: string | null
+          recipient_name: string | null
+          shared_at: string | null
+          shared_by: string | null
+        }
+        Insert: {
+          contact_data?: Json | null
+          created_at?: string | null
+          id?: string
+          platforms: string[]
+          property_id?: string | null
+          recipient_name?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+        }
+        Update: {
+          contact_data?: Json | null
+          created_at?: string | null
+          id?: string
+          platforms?: string[]
+          property_id?: string | null
+          recipient_name?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_share_history_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_share_history_shared_by_fkey"
+            columns: ["shared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

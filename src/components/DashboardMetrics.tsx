@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Home, TrendingUp, Package, Share2, DollarSign } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, Legend } from 'recharts';
 
 interface Metrics {
   total: number;
@@ -60,8 +60,9 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
       if (error) throw error;
 
       const total = properties?.length || 0;
-      const forSale = properties?.filter(p => p.purpose === 'venda').length || 0;
-      const forRent = properties?.filter(p => p.purpose === 'locacao').length || 0;
+      // Corrigido: imóveis com 'venda_locacao' são contados em ambos os cards
+      const forSale = properties?.filter(p => p.purpose === 'venda' || p.purpose === 'venda_locacao').length || 0;
+      const forRent = properties?.filter(p => p.purpose === 'locacao' || p.purpose === 'venda_locacao').length || 0;
       const available = properties?.filter(p => p.status === 'disponivel').length || 0;
       const negotiating = properties?.filter(p => p.status === 'reservado').length || 0;
       const sold = properties?.filter(p => p.status === 'vendido' || p.status === 'alugado').length || 0;
@@ -222,7 +223,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }: any) => `${(percent * 100).toFixed(0)}%`}
                       outerRadius={60}
                       fill="#8884d8"
                       dataKey="value"
@@ -232,6 +233,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
                       ))}
                     </Pie>
                     <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -246,9 +248,12 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={averageValues}>
-                    <XAxis dataKey="name" fontSize={10} />
-                    <YAxis fontSize={10} />
-                    <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`} />
+                    <XAxis dataKey="name" fontSize={9} tick={{ fontSize: 9 }} />
+                    <YAxis fontSize={9} tick={{ fontSize: 9 }} />
+                    <Tooltip 
+                      formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`}
+                      contentStyle={{ fontSize: 10 }}
+                    />
                     <Bar dataKey="average" fill="#8b5cf6" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -269,7 +274,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }: any) => `${(percent * 100).toFixed(0)}%`}
                       outerRadius={60}
                       fill="#8884d8"
                       dataKey="value"
@@ -279,6 +284,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
                       ))}
                     </Pie>
                     <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>

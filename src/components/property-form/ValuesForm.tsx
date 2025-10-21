@@ -2,6 +2,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
+import { validateNumericField } from '@/lib/validationUtils';
+import { toast } from 'sonner';
 
 interface ValuesFormProps {
   formData: any;
@@ -40,8 +42,16 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
             id="sale_price"
             type="number"
             step="0.01"
+            max="999999999.99"
             value={formData.sale_price || ''}
-            onChange={(e) => setFormData({ ...formData, sale_price: e.target.value ? parseFloat(e.target.value) : null })}
+            onChange={(e) => {
+              const value = e.target.value ? parseFloat(e.target.value) : null;
+              if (value && !validateNumericField(value, 999999999.99)) {
+                toast.error('Valor muito alto! Máximo: R$ 999.999.999,99');
+                return;
+              }
+              setFormData({ ...formData, sale_price: value });
+            }}
             placeholder="0,00"
           />
         </div>
@@ -52,8 +62,16 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
             id="rental_price"
             type="number"
             step="0.01"
+            max="999999999.99"
             value={formData.rental_price || ''}
-            onChange={(e) => setFormData({ ...formData, rental_price: e.target.value ? parseFloat(e.target.value) : null })}
+            onChange={(e) => {
+              const value = e.target.value ? parseFloat(e.target.value) : null;
+              if (value && !validateNumericField(value, 999999999.99)) {
+                toast.error('Valor muito alto! Máximo: R$ 999.999.999,99');
+                return;
+              }
+              setFormData({ ...formData, rental_price: value });
+            }}
             placeholder="0,00"
           />
         </div>
