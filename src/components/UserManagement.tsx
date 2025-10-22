@@ -301,11 +301,28 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
     try {
+      // Verificar se o usuário tem imóveis associados
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (propertiesError) throw propertiesError;
+
+      if (properties && properties.length > 0) {
+        toast({
+          title: 'Não é possível deletar',
+          description: `Este usuário possui ${properties.length} imóvel(is) associado(s). Delete os imóveis antes de deletar o usuário.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) {
+        return;
+      }
+
       // Primeiro deletar roles
       await supabase.from('user_roles').delete().eq('user_id', userId);
       
@@ -375,6 +392,29 @@ export default function UserManagement() {
     try {
       const user = users.find(u => u.id === userId);
       const archived = (user as any)?.archived || false;
+
+      // Verificar se o usuário tem imóveis ativos
+      if (!archived) {
+        const { data: properties, error: propertiesError } = await supabase
+          .from('properties')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('archived', false);
+
+        if (propertiesError) throw propertiesError;
+
+        if (properties && properties.length > 0) {
+          toast({
+            title: 'Atenção',
+            description: `Este usuário possui ${properties.length} imóvel(is) ativo(s). Considere arquivar ou deletar os imóveis antes de arquivar o usuário.`,
+            variant: 'destructive',
+          });
+          
+          if (!confirm(`Este usuário possui ${properties.length} imóvel(is) ativo(s). Deseja continuar e arquivar o usuário mesmo assim?`)) {
+            return;
+          }
+        }
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -697,7 +737,7 @@ export default function UserManagement() {
 
       {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
             <DialogDescription>
@@ -715,9 +755,10 @@ export default function UserManagement() {
                   disabled
                   className="bg-muted"
                 />
+                <p className="text-xs text-muted-foreground mt-1">O e-mail não pode ser alterado</p>
               </div>
               <div>
-                <Label htmlFor="edit_name">Nome Completo</Label>
+                <Label htmlFor="edit_name">Nome Completo *</Label>
                 <Input
                   id="edit_name"
                   value={editingUser.full_name || ''}
@@ -726,7 +767,7 @@ export default function UserManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit_company">Empresa</Label>
+                <Label htmlFor="edit_company">Empresa (Opcional)</Label>
                 <Select
                   value={editingUser.company_id || undefined}
                   onValueChange={(value) => setEditingUser({ ...editingUser, company_id: value })}
@@ -742,6 +783,104 @@ export default function UserManagement() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit_role">Nível de Acesso</Label>
+                <Select
+                  value={userRoles[editingUser.id] || 'user'}
+                  onValueChange={(value) => handleUpdateRole(editingUser.id, value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Usuário</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_phone">Telefone</Label>
+                  <Input
+                    id="edit_phone"
+                    value={editingUser.phone || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_creci">CRECI</Label>
+                  <Input
+                    id="edit_creci"
+                    value={editingUser.creci || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, creci: e.target.value })}
+                    placeholder="Número do CRECI"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit_cep">CEP</Label>
+                <Input
+                  id="edit_cep"
+                  value={editingUser.cep || ''}
+                  onChange={(e) => handleEditCepChange(e.target.value)}
+                  placeholder="00000-000"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="edit_street">Rua</Label>
+                  <Input
+                    id="edit_street"
+                    value={editingUser.street || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, street: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_number">Número</Label>
+                  <Input
+                    id="edit_number"
+                    value={editingUser.number || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, number: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit_complement">Complemento</Label>
+                <Input
+                  id="edit_complement"
+                  value={editingUser.complement || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, complement: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_neighborhood">Bairro</Label>
+                  <Input
+                    id="edit_neighborhood"
+                    value={editingUser.neighborhood || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, neighborhood: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_city">Cidade</Label>
+                  <Input
+                    id="edit_city"
+                    value={editingUser.city || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, city: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit_state">Estado</Label>
+                <Input
+                  id="edit_state"
+                  value={editingUser.state || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, state: e.target.value })}
+                  placeholder="UF"
+                  maxLength={2}
+                />
               </div>
             </div>
           )}
