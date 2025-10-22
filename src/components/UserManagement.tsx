@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, User, KeyRound, Edit, Copy, Archive } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, KeyRound, Edit, Copy, Archive, ArchiveRestore } from 'lucide-react';
 import { fetchCEP } from '@/lib/cepUtils';
+import { formatCPF, validateCPF } from '@/lib/validationUtils';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ interface UserProfile {
   company_id: string | null;
   phone?: string;
   creci?: string;
+  cpf_cnpj?: string;
   cep?: string;
   street?: string;
   number?: string;
@@ -33,6 +35,7 @@ interface UserProfile {
   neighborhood?: string;
   city?: string;
   state?: string;
+  archived?: boolean;
   companies: {
     name: string;
   } | null;
@@ -59,6 +62,7 @@ export default function UserManagement() {
     role: 'user',
     phone: '',
     creci: '',
+    cpf_cnpj: '',
     cep: '',
     street: '',
     number: '',
@@ -75,7 +79,7 @@ export default function UserManagement() {
   const loadData = async () => {
     try {
       const [usersData, companiesData, rolesData] = await Promise.all([
-        supabase.from('profiles').select('id, email, full_name, company_id, companies(name)'),
+        supabase.from('profiles').select('id, email, full_name, company_id, cpf_cnpj, archived, companies(name)'),
         supabase.from('companies').select('id, name').order('name'),
         supabase.from('user_roles').select('user_id, role'),
       ]);
@@ -114,6 +118,15 @@ export default function UserManagement() {
       return;
     }
 
+    if (newUser.cpf_cnpj && !validateCPF(newUser.cpf_cnpj)) {
+      toast({
+        title: 'Erro',
+        description: 'CPF inválido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
@@ -134,6 +147,7 @@ export default function UserManagement() {
             company_id: newUser.companyId,
             phone: newUser.phone,
             creci: newUser.creci,
+            cpf_cnpj: newUser.cpf_cnpj,
             cep: newUser.cep,
             street: newUser.street,
             number: newUser.number,
@@ -165,6 +179,7 @@ export default function UserManagement() {
         role: 'user',
         phone: '',
         creci: '',
+        cpf_cnpj: '',
         cep: '',
         street: '',
         number: '',
@@ -242,6 +257,15 @@ export default function UserManagement() {
   const handleUpdateUser = async () => {
     if (!editingUser) return;
 
+    if (editingUser.cpf_cnpj && !validateCPF(editingUser.cpf_cnpj)) {
+      toast({
+        title: 'Erro',
+        description: 'CPF inválido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -250,6 +274,7 @@ export default function UserManagement() {
           company_id: editingUser.company_id,
           phone: editingUser.phone,
           creci: editingUser.creci,
+          cpf_cnpj: editingUser.cpf_cnpj,
           cep: editingUser.cep,
           street: editingUser.street,
           number: editingUser.number,
@@ -548,7 +573,7 @@ export default function UserManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="user_phone">Telefone</Label>
                     <Input
@@ -565,6 +590,16 @@ export default function UserManagement() {
                       value={newUser.creci}
                       onChange={(e) => setNewUser({ ...newUser, creci: e.target.value })}
                       placeholder="Número do CRECI"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user_cpf">CPF</Label>
+                    <Input
+                      id="user_cpf"
+                      value={newUser.cpf_cnpj}
+                      onChange={(e) => setNewUser({ ...newUser, cpf_cnpj: formatCPF(e.target.value) })}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
                     />
                   </div>
                 </div>
@@ -671,9 +706,16 @@ export default function UserManagement() {
                       </p>
                     )}
                   </div>
-                  <Badge variant={userRoles[user.id] === 'admin' ? 'default' : 'secondary'}>
-                    {userRoles[user.id] === 'admin' ? 'Admin' : 'Usuário'}
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge variant={userRoles[user.id] === 'admin' ? 'default' : 'secondary'}>
+                      {userRoles[user.id] === 'admin' ? 'Admin' : 'Usuário'}
+                    </Badge>
+                    {user.archived && (
+                      <Badge variant="outline" className="bg-muted">
+                        Arquivado
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Select
@@ -716,9 +758,13 @@ export default function UserManagement() {
                     variant="outline"
                     size="icon"
                     onClick={() => handleArchiveUser(user.id)}
-                    title="Arquivar usuário"
+                    title={user.archived ? 'Desarquivar usuário' : 'Arquivar usuário'}
                   >
-                    <Archive className="h-4 w-4" />
+                    {user.archived ? (
+                      <ArchiveRestore className="h-4 w-4" />
+                    ) : (
+                      <Archive className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     variant="destructive"
@@ -799,7 +845,7 @@ export default function UserManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="edit_phone">Telefone</Label>
                   <Input
@@ -816,6 +862,16 @@ export default function UserManagement() {
                     value={editingUser.creci || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, creci: e.target.value })}
                     placeholder="Número do CRECI"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_cpf">CPF</Label>
+                  <Input
+                    id="edit_cpf"
+                    value={editingUser.cpf_cnpj || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, cpf_cnpj: formatCPF(e.target.value) })}
+                    placeholder="000.000.000-00"
+                    maxLength={14}
                   />
                 </div>
               </div>
