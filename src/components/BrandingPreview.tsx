@@ -3,13 +3,17 @@ import { Building2 } from 'lucide-react';
 
 interface BrandingPreviewProps {
   appName: string;
+  appVersion: string; // Novo prop para a versão do sistema
   primaryColor: string;
   secondaryColor: string;
   logoUrl?: string;
   faviconUrl?: string;
+  logoSizeDesktop?: number; // Novo prop para o tamanho do logo no desktop
 }
 
-export default function BrandingPreview({ appName, primaryColor, secondaryColor, logoUrl, faviconUrl }: BrandingPreviewProps) {
+export default function BrandingPreview({ appName, appVersion, primaryColor, secondaryColor, logoUrl, faviconUrl, logoSizeDesktop }: BrandingPreviewProps) {
+  const logoDisplaySize = logoSizeDesktop ? `${logoSizeDesktop}px` : '96px'; // Usar logoSizeDesktop ou um default maior
+
   return (
     <Card>
       <CardHeader>
@@ -20,18 +24,28 @@ export default function BrandingPreview({ appName, primaryColor, secondaryColor,
         <div className="border rounded-lg p-6 bg-white">
           <div className="flex items-center gap-3 mb-4">
             <div 
-              className="h-12 w-12 rounded-lg flex items-center justify-center overflow-hidden"
-              style={{ backgroundColor: logoUrl ? 'transparent' : primaryColor }}
+              className="flex items-center justify-center overflow-hidden"
+              style={{ 
+                backgroundColor: logoUrl ? 'transparent' : primaryColor, 
+                height: logoDisplaySize, 
+                width: logoDisplaySize,
+                borderRadius: '0.5rem'
+              }}
             >
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
               ) : (
-                <Building2 className="h-6 w-6 text-white" />
+                <Building2 style={{ height: `calc(${logoDisplaySize} * 0.5)`, width: `calc(${logoDisplaySize} * 0.5)` }} className="text-white" />
               )}
             </div>
-            <h2 className="text-2xl font-bold" style={{ color: primaryColor }}>
-              {appName || 'ImoGuru'}
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold" style={{ color: primaryColor }}>
+                {appName || 'ImoGuru Rose Real State'}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {appVersion || 'LITE 1.0'}
+              </p>
+            </div>
             {faviconUrl && (
               <div className="ml-auto h-8 w-8 rounded flex items-center justify-center overflow-hidden border">
                 <img src={faviconUrl} alt="Favicon" className="w-full h-full object-contain" />

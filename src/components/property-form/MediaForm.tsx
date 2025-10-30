@@ -13,6 +13,8 @@ interface MediaFormProps {
   setPendingImages: (files: File[]) => void;
   pendingVideos: File[];
   setPendingVideos: (files: File[]) => void;
+  formData: any;
+  setFormData: (data: any) => void;
 }
 
 export default function MediaForm({ 
@@ -20,13 +22,16 @@ export default function MediaForm({
   pendingImages, 
   setPendingImages,
   pendingVideos,
-  setPendingVideos 
+  setPendingVideos,
+  formData,
+  setFormData,
 }: MediaFormProps) {
   const { toast } = useToast();
   const [images, setImages] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [youtubeUrlError, setYoutubeUrlError] = useState<string | null>(null);
 
   useEffect(() => {
     if (propertyId) {
@@ -256,6 +261,23 @@ export default function MediaForm({
     setPendingVideos(pendingVideos.filter((_, i) => i !== index));
   };
 
+  // Basic YouTube URL validation
+  const isValidYouTubeUrl = (url: string): boolean => {
+    if (!url) return true; // Allow empty string
+    const regex = /^(https?\:\/\/(?:www\.)?youtube\.com\/watch\?v=|https?\:\/\/(?:www\.)?youtu\.be\/)([a-zA-Z0-9_-]{11})$/;
+    return regex.test(url);
+  };
+
+  const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setFormData({ ...formData, youtube_url: url });
+    if (!isValidYouTubeUrl(url)) {
+      setYoutubeUrlError('URL do YouTube inválida.');
+    } else {
+      setYoutubeUrlError(null);
+    }
+  };
+
   if (!propertyId) {
     return (
       <div className="space-y-6 pt-4">
@@ -302,7 +324,7 @@ export default function MediaForm({
         </div>
 
         <div>
-          <Label>Vídeos</Label>
+          <Label>Vídeos (Upload)</Label>
           <div className="mt-2">
             <Input
               type="file"
@@ -337,6 +359,18 @@ export default function MediaForm({
               Nenhum vídeo adicionado ainda.
             </p>
           )}
+        </div>
+
+        <div>
+          <Label htmlFor="youtube_url">URL do Vídeo (YouTube)</Label>
+          <Input
+            id="youtube_url"
+            value={formData.youtube_url}
+            onChange={handleYoutubeUrlChange}
+            placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+            className={youtubeUrlError ? 'border-red-500' : ''}
+          />
+          {youtubeUrlError && <p className="text-red-500 text-sm mt-1">{youtubeUrlError}</p>}
         </div>
 
         <p className="text-sm text-muted-foreground">
@@ -408,7 +442,7 @@ export default function MediaForm({
       </div>
 
       <div>
-        <Label>Vídeos</Label>
+        <Label>Vídeos (Upload)</Label>
         <div className="mt-2">
           <Input
             type="file"
@@ -451,6 +485,18 @@ export default function MediaForm({
             Nenhum vídeo enviado ainda.
           </p>
         )}
+      </div>
+
+      <div>
+        <Label htmlFor="youtube_url">URL do Vídeo (YouTube)</Label>
+        <Input
+          id="youtube_url"
+          value={formData.youtube_url}
+          onChange={handleYoutubeUrlChange}
+          placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+          className={youtubeUrlError ? 'border-red-500' : ''}
+        />
+        {youtubeUrlError && <p className="text-red-500 text-sm mt-1">{youtubeUrlError}</p>}
       </div>
 
       {uploading && (

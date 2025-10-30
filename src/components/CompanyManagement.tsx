@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Building2, Upload, Trash2, Plus, Edit, Copy, Archive, ArchiveRestore } from 'lucide-react';
+import { Building2, Upload, Trash2, Plus, Edit, Copy, Archive, ArchiveRestore, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { fetchCEP } from '@/lib/cepUtils';
 import { validateCNPJ, formatCNPJ } from '@/lib/validationUtils';
@@ -18,6 +18,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import CompanyUsersDialog from './CompanyUsersDialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Company {
   id: string;
@@ -27,7 +29,7 @@ interface Company {
   whatsapp?: string | null;
   facebook?: string | null;
   instagram?: string | null;
-  website?: string | null;
+  website_domain?: string | null; // Alterado de website para website_domain
   primary_color?: string | null;
   secondary_color?: string | null;
   cep?: string | null;
@@ -39,6 +41,7 @@ interface Company {
   state?: string | null;
   logo_url: string | null;
   archived?: boolean;
+  ai_agent_enabled?: boolean; // Novo campo
   created_at: string;
 }
 
@@ -58,7 +61,7 @@ export default function CompanyManagement() {
     whatsapp: '',
     facebook: '',
     instagram: '',
-    website: '',
+    website_domain: '', // Alterado de website para website_domain
     primary_color: '#8b5cf6',
     secondary_color: '#3b82f6',
     cep: '',
@@ -68,7 +71,10 @@ export default function CompanyManagement() {
     neighborhood: '',
     city: '',
     state: '',
+    ai_agent_enabled: false, // Novo campo
   });
+  const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
+  const [selectedCompanyForUsers, setSelectedCompanyForUsers] = useState<{ id: string, name: string } | null>(null);
 
   useEffect(() => {
     loadCompanies();
@@ -78,10 +84,15 @@ export default function CompanyManagement() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('*')
+        .select(
+          'id, name, cnpj, phone, whatsapp, facebook, instagram, website_domain, primary_color, secondary_color, cep, street, number, complement, neighborhood, city, state, logo_url, archived, ai_agent_enabled, created_at'
+        )
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro detalhado ao carregar empresas:', error);
+        throw error;
+      }
       setCompanies(data || []);
     } catch (error) {
       console.error('Error loading companies:', error);
@@ -117,7 +128,10 @@ export default function CompanyManagement() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .insert(newCompany)
+        .insert({
+          ...newCompany,
+          ai_agent_enabled: newCompany.ai_agent_enabled, // Incluir no insert
+        })
         .select()
         .single();
 
@@ -140,7 +154,7 @@ export default function CompanyManagement() {
         whatsapp: '',
         facebook: '',
         instagram: '',
-        website: '',
+        website_domain: '', // Alterado de website para website_domain
         primary_color: '#8b5cf6',
         secondary_color: '#3b82f6',
         cep: '',
@@ -150,6 +164,7 @@ export default function CompanyManagement() {
         neighborhood: '',
         city: '',
         state: '',
+        ai_agent_enabled: false, // Resetar para o padrão
       });
       setLogoFile(null);
       setIsDialogOpen(false);
@@ -237,6 +252,7 @@ export default function CompanyManagement() {
       ...company,
       primary_color: company.primary_color || '#8b5cf6',
       secondary_color: company.secondary_color || '#3b82f6',
+      ai_agent_enabled: company.ai_agent_enabled || false, // Definir valor padrão
     });
     setIsEditDialogOpen(true);
   };
@@ -272,7 +288,7 @@ export default function CompanyManagement() {
           whatsapp: editingCompany.whatsapp,
           facebook: editingCompany.facebook,
           instagram: editingCompany.instagram,
-          website: editingCompany.website,
+          website_domain: editingCompany.website_domain, // Alterado de website para website_domain
           primary_color: editingCompany.primary_color,
           secondary_color: editingCompany.secondary_color,
           cep: editingCompany.cep,
@@ -282,6 +298,7 @@ export default function CompanyManagement() {
           neighborhood: editingCompany.neighborhood,
           city: editingCompany.city,
           state: editingCompany.state,
+          ai_agent_enabled: editingCompany.ai_agent_enabled, // Incluir no update
         })
         .eq('id', editingCompany.id);
 
@@ -342,7 +359,7 @@ export default function CompanyManagement() {
           whatsapp: company.whatsapp,
           facebook: company.facebook,
           instagram: company.instagram,
-          website: company.website,
+          website_domain: company.website_domain, // Alterado de website para website_domain
           primary_color: company.primary_color,
           secondary_color: company.secondary_color,
           cep: company.cep,
@@ -352,6 +369,7 @@ export default function CompanyManagement() {
           neighborhood: company.neighborhood,
           city: company.city,
           state: company.state,
+          ai_agent_enabled: company.ai_agent_enabled, // Incluir no duplicate
         })
         .select()
         .single();
@@ -580,11 +598,11 @@ export default function CompanyManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company_website">Website/Domínio</Label>
+                    <Label htmlFor="company_website_domain">Website/Domínio</Label>
                     <Input
-                      id="company_website"
-                      value={newCompany.website}
-                      onChange={(e) => setNewCompany({ ...newCompany, website: e.target.value })}
+                      id="company_website_domain"
+                      value={newCompany.website_domain}
+                      onChange={(e) => setNewCompany({ ...newCompany, website_domain: e.target.value })}
                       placeholder="https://exemplo.com.br"
                     />
                   </div>
@@ -731,6 +749,15 @@ export default function CompanyManagement() {
                     maxLength={2}
                   />
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ai_agent_enabled"
+                    checked={newCompany.ai_agent_enabled}
+                    onCheckedChange={(checked) => setNewCompany({ ...newCompany, ai_agent_enabled: checked === true })}
+                  />
+                  <Label htmlFor="ai_agent_enabled">Permitir Agente de IA</Label>
+                </div>
+
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -811,6 +838,17 @@ export default function CompanyManagement() {
                     )}
                   </Button>
                   <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedCompanyForUsers({ id: company.id, name: company.name });
+                      setIsUsersDialogOpen(true);
+                    }}
+                    title="Visualizar usuários"
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
+                  <Button
                     variant="destructive"
                     size="icon"
                     onClick={() => handleDeleteCompany(company.id)}
@@ -887,11 +925,11 @@ export default function CompanyManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_website">Website/Domínio</Label>
+                  <Label htmlFor="edit_company_website_domain">Website/Domínio</Label>
                   <Input
-                    id="edit_company_website"
-                    value={editingCompany.website || ''}
-                    onChange={(e) => setEditingCompany({ ...editingCompany, website: e.target.value })}
+                    id="edit_company_website_domain"
+                    value={editingCompany.website_domain || ''}
+                    onChange={(e) => setEditingCompany({ ...editingCompany, website_domain: e.target.value })}
                     placeholder="https://exemplo.com.br"
                   />
                 </div>
@@ -1043,6 +1081,15 @@ export default function CompanyManagement() {
                   maxLength={2}
                 />
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit_ai_agent_enabled"
+                  checked={editingCompany.ai_agent_enabled}
+                  onCheckedChange={(checked) => setEditingCompany({ ...editingCompany, ai_agent_enabled: checked === true })}
+                />
+                <Label htmlFor="edit_ai_agent_enabled">Permitir Agente de IA</Label>
+              </div>
+
             </div>
           )}
           <DialogFooter>
@@ -1053,6 +1100,13 @@ export default function CompanyManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CompanyUsersDialog
+        companyId={selectedCompanyForUsers?.id || null}
+        companyName={selectedCompanyForUsers?.name || null}
+        isOpen={isUsersDialogOpen}
+        onClose={() => setIsUsersDialogOpen(false)}
+      />
     </Card>
   );
 }

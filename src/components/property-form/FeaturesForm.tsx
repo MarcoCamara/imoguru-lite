@@ -9,7 +9,7 @@ interface FeaturesFormProps {
 export default function FeaturesForm({ formData, setFormData }: FeaturesFormProps) {
   return (
     <div className="space-y-4 pt-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <Label htmlFor="bedrooms">Quartos</Label>
           <Input

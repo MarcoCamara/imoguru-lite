@@ -42,12 +42,13 @@ export default function PropertyAuthorizations() {
   const [signatureMethod, setSignatureMethod] = useState<'draw' | 'upload'>('draw');
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (user && propertyId) {
       loadData();
     }
-  }, [user, propertyId]);
+  }, [user, propertyId, searchTerm]); // Adicionar searchTerm como dependência
 
   const loadData = async () => {
     try {
@@ -62,7 +63,12 @@ export default function PropertyAuthorizations() {
       if (templatesResult.error) throw templatesResult.error;
 
       setProperty(propResult.data);
-      setAuthorizations(authResult.data || []);
+      const filteredAuthorizations = (authResult.data || []).filter((auth: Authorization) => {
+          const templateName = templatesResult.data?.find(t => t.id === auth.template_id)?.name || '';
+          return templateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                 auth.filled_content.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+      setAuthorizations(filteredAuthorizations);
       setTemplates(templatesResult.data || []);
     } catch (error: any) {
       toast({
@@ -259,7 +265,14 @@ export default function PropertyAuthorizations() {
             Nova Autorização
           </Button>
         </div>
-
+        <div className="mb-4">
+          <Input
+            placeholder="Pesquisar autorizações por nome do template ou conteúdo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-md"
+          />
+        </div>
         <div className="grid gap-4">
           {authorizations.length === 0 ? (
             <Card>

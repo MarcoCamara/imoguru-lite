@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Edit, Trash2, Download, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Download, FileText, Eye, Copy, Archive, ArchiveRestore } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplatePreview from '@/components/TemplatePreview';
@@ -22,6 +22,7 @@ interface AuthTemplate {
   name: string;
   content: string;
   is_default: boolean;
+  archived?: boolean;
 }
 
 export default function AuthorizationTemplates() {
@@ -35,6 +36,7 @@ export default function AuthorizationTemplates() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [formatWidth, setFormatWidth] = useState(2480);
   const [formatHeight, setFormatHeight] = useState(3508);
+  const [zoomLevel, setZoomLevel] = useState(1.0); // Zoom inicial 100%
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -112,6 +114,36 @@ export default function AuthorizationTemplates() {
     }
   };
 
+  const getPreviewContent = (template: AuthTemplate) => {
+    let content = template.content;
+    
+    // Mock data para preview
+    const mockData = {
+      owner_name: 'João da Silva',
+      owner_cpf: '123.456.789-00',
+      owner_address: 'Rua das Flores, 123 - Jardim Primavera',
+      owner_city: 'São Paulo',
+      owner_state: 'SP',
+      property_address: 'Av. Paulista, 1000',
+      property_type: 'Apartamento',
+      property_description: 'Apartamento com 3 quartos e 2 vagas',
+      authorization_date: new Date().toLocaleDateString('pt-BR'),
+      authorization_validity: '90 dias',
+      agent_name: 'Maria Santos',
+      agent_creci: 'CRECI 12345-F',
+      company_name: 'Imobiliária Premium',
+      company_cnpj: '12.345.678/0001-90',
+    };
+
+    // Substituir placeholders
+    Object.entries(mockData).forEach(([key, value]) => {
+      const placeholder = new RegExp(`{{${key}}}`, 'g');
+      content = content.replace(placeholder, String(value));
+    });
+
+    return content;
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este template?')) return;
 
@@ -134,6 +166,60 @@ export default function AuthorizationTemplates() {
       toast({
         title: 'Erro',
         description: 'Não foi possível excluir o template.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDuplicate = async (template: AuthTemplate) => {
+    try {
+      const { error } = await supabase
+        .from('authorization_templates')
+        .insert({
+          name: `${template.name} (Cópia)`,
+          content: template.content,
+          is_default: false,
+          archived: false,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Template duplicado com sucesso!',
+      });
+
+      loadTemplates();
+    } catch (error) {
+      console.error('Error duplicating template:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível duplicar o template.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleArchive = async (id: string, currentArchived: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('authorization_templates')
+        .update({ archived: !currentArchived })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: currentArchived ? 'Template desarquivado com sucesso!' : 'Template arquivado com sucesso!',
+      });
+
+      loadTemplates();
+    } catch (error) {
+      console.error('Error toggling archive:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível arquivar/desarquivar o template.',
         variant: 'destructive',
       });
     }
@@ -220,7 +306,7 @@ Assinatura do Proprietário`,
                       {template.content.substring(0, 100)}...
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -247,13 +333,31 @@ Assinatura do Proprietário`,
                         setEditingTemplate(template);
                         setDialogOpen(true);
                       }}
+                      title="Editar"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => handleDuplicate(template)}
+                      title="Duplicar"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleToggleArchive(template.id, template.archived || false)}
+                      title={template.archived ? 'Desarquivar' : 'Arquivar'}
+                    >
+                      {template.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDelete(template.id)}
+                      title="Deletar"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -273,8 +377,7 @@ Assinatura do Proprietário`,
             </DialogHeader>
 
             {editingTemplate && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
                   <Label htmlFor="name">Nome do Template</Label>
                   <Input
@@ -352,28 +455,52 @@ Assinatura do Proprietário`,
                   </Button>
                   <Button onClick={handleSave}>Salvar</Button>
                 </div>
-              </div>
 
-              <div className="sticky top-0">
+                {/* Preview em Tempo Real - Largura Total */}
                 <TemplatePreviewLive
                   content={editingTemplate.content}
                   width={formatWidth}
                   height={formatHeight}
                   type="authorization"
+                  zoomLevel={zoomLevel}
+                  onZoomChange={setZoomLevel}
                 />
               </div>
-            </div>
             )}
           </DialogContent>
         </Dialog>
 
         {previewTemplate && (
-          <TemplatePreview
-            open={previewOpen}
-            onOpenChange={setPreviewOpen}
-            template={previewTemplate}
-            type="authorization"
-          />
+          <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+            <DialogContent className="max-w-[100vw] w-[100vw] h-[100vh] max-h-[100vh] p-0 m-0">
+              <div 
+                className="h-full w-full flex items-center justify-center bg-gray-900 overflow-hidden"
+                style={{
+                  padding: '20px',
+                }}
+              >
+                <div 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    maxWidth: `${formatWidth}px`,
+                    maxHeight: `${formatHeight}px`,
+                    aspectRatio: `${formatWidth} / ${formatHeight}`,
+                  }}
+                  className="flex items-center justify-center"
+                >
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: getPreviewContent(previewTemplate) }}
+                    className="prose prose-sm max-w-none bg-white shadow-2xl w-full h-full overflow-auto"
+                    style={{
+                      padding: '40px',
+                      aspectRatio: `${formatWidth} / ${formatHeight}`,
+                    }}
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </div>

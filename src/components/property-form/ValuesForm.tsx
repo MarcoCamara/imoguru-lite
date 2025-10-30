@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
 import { validateNumericField } from '@/lib/validationUtils';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface ValuesFormProps {
   formData: any;
@@ -12,6 +13,10 @@ interface ValuesFormProps {
 
 export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
   const otherCosts = formData.other_costs || [];
+  const [salePriceError, setSalePriceError] = useState<string | null>(null);
+  const [rentalPriceError, setRentalPriceError] = useState<string | null>(null);
+  const [iptuPriceError, setIptuPriceError] = useState<string | null>(null);
+  const [condoPriceError, setCondoPriceError] = useState<string | null>(null);
 
   const addOtherCost = () => {
     setFormData({
@@ -33,6 +38,23 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
     setFormData({ ...formData, other_costs: updated });
   };
 
+  const handlePriceChange = (
+    field: string,
+    value: string,
+    setError: React.Dispatch<React.SetStateAction<string | null>>,
+    maxValue: number = 999999999.99,
+  ) => {
+    setError(null);
+    const numValue = value ? parseFloat(value) : null;
+
+    if (numValue !== null && !validateNumericField(numValue, maxValue)) {
+      setError(`Valor muito alto! Máximo: R$ ${maxValue.toLocaleString('pt-BR')}`);
+      setFormData((prevData: any) => ({ ...prevData, [field]: numValue }));
+      return;
+    }
+    setFormData((prevData: any) => ({ ...prevData, [field]: numValue }));
+  };
+
   return (
     <div className="space-y-4 pt-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -44,16 +66,11 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
             step="0.01"
             max="999999999.99"
             value={formData.sale_price || ''}
-            onChange={(e) => {
-              const value = e.target.value ? parseFloat(e.target.value) : null;
-              if (value && !validateNumericField(value, 999999999.99)) {
-                toast.error('Valor muito alto! Máximo: R$ 999.999.999,99');
-                return;
-              }
-              setFormData({ ...formData, sale_price: value });
-            }}
+            onChange={(e) => handlePriceChange('sale_price', e.target.value, setSalePriceError)}
             placeholder="0,00"
+            className={salePriceError ? 'border-red-500' : ''}
           />
+          {salePriceError && <p className="text-red-500 text-sm mt-1">{salePriceError}</p>}
         </div>
 
         <div>
@@ -64,16 +81,11 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
             step="0.01"
             max="999999999.99"
             value={formData.rental_price || ''}
-            onChange={(e) => {
-              const value = e.target.value ? parseFloat(e.target.value) : null;
-              if (value && !validateNumericField(value, 999999999.99)) {
-                toast.error('Valor muito alto! Máximo: R$ 999.999.999,99');
-                return;
-              }
-              setFormData({ ...formData, rental_price: value });
-            }}
+            onChange={(e) => handlePriceChange('rental_price', e.target.value, setRentalPriceError)}
             placeholder="0,00"
+            className={rentalPriceError ? 'border-red-500' : ''}
           />
+          {rentalPriceError && <p className="text-red-500 text-sm mt-1">{rentalPriceError}</p>}
         </div>
       </div>
 
@@ -85,9 +97,11 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
             type="number"
             step="0.01"
             value={formData.iptu_price || ''}
-            onChange={(e) => setFormData({ ...formData, iptu_price: e.target.value ? parseFloat(e.target.value) : null })}
+            onChange={(e) => handlePriceChange('iptu_price', e.target.value, setIptuPriceError)}
             placeholder="0,00"
+            className={iptuPriceError ? 'border-red-500' : ''}
           />
+          {iptuPriceError && <p className="text-red-500 text-sm mt-1">{iptuPriceError}</p>}
         </div>
 
         <div>
@@ -97,9 +111,11 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
             type="number"
             step="0.01"
             value={formData.condo_price || ''}
-            onChange={(e) => setFormData({ ...formData, condo_price: e.target.value ? parseFloat(e.target.value) : null })}
+            onChange={(e) => handlePriceChange('condo_price', e.target.value, setCondoPriceError)}
             placeholder="0,00"
+            className={condoPriceError ? 'border-red-500' : ''}
           />
+          {condoPriceError && <p className="text-red-500 text-sm mt-1">{condoPriceError}</p>}
         </div>
       </div>
 
@@ -113,7 +129,7 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
         </div>
 
         {otherCosts.map((cost: any, index: number) => (
-          <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+          <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg">
             <div>
               <Label htmlFor={`cost_desc_${index}`}>Descrição</Label>
               <Input
@@ -123,8 +139,8 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
                 placeholder="Ex: Taxa de limpeza"
               />
             </div>
-            <div className="flex gap-2">
-              <div className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end w-full">
+              <div className="flex-1 w-full">
                 <Label htmlFor={`cost_value_${index}`}>Valor (R$)</Label>
                 <Input
                   id={`cost_value_${index}`}
@@ -135,7 +151,7 @@ export default function ValuesForm({ formData, setFormData }: ValuesFormProps) {
                   placeholder="0,00"
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex-shrink-0">
                 <Button
                   type="button"
                   variant="outline"

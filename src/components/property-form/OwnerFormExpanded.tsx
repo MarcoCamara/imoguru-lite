@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import SpouseForm from './SpouseForm';
 import PartnersForm from './PartnersForm';
 import { supabase } from '@/integrations/supabase/client';
+import { validateCPF, validateCNPJ, formatCPF, formatCNPJ } from '@/lib/validationUtils';
 
 interface OwnerFormExpandedProps {
   formData: any;
@@ -24,6 +25,7 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
   const [partners, setPartners] = useState<any[]>([]);
   const [loadingSpouse, setLoadingSpouse] = useState(false);
   const [loadingPartners, setLoadingPartners] = useState(false);
+  const [cpfCnpjError, setCpfCnpjError] = useState<string | null>(null);
 
   useEffect(() => {
     if (propertyId) {
@@ -144,6 +146,42 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
     }
   };
 
+  const handleCpfCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/\D/g, ''); // Remove todos os caracteres não numéricos
+
+    // Decide se é CPF ou CNPJ baseado no comprimento
+    if (formData.owner_type === 'fisica') { // Se for pessoa física, espera CPF
+      value = formatCPF(value);
+      setFormData({ ...formData, owner_cpf_cnpj: value });
+      if (value.length === 14 && !validateCPF(value)) { // Se tem 11 dígitos e é inválido
+        setCpfCnpjError('CPF inválido.');
+      } else if (value.length < 14 && value.length > 0) {
+        setCpfCnpjError('CPF incompleto.');
+      } else {
+        setCpfCnpjError(null);
+      }
+    } else if (formData.owner_type === 'juridica') { // Se for pessoa jurídica, espera CNPJ
+      value = formatCNPJ(value);
+      setFormData({ ...formData, owner_cpf_cnpj: value });
+      if (value.length === 18 && !validateCNPJ(value)) { // Se tem 14 dígitos e é inválido
+        setCpfCnpjError('CNPJ inválido.');
+      } else if (value.length < 18 && value.length > 0) {
+        setCpfCnpjError('CNPJ incompleto.');
+      } else {
+        setCpfCnpjError(null);
+      }
+    } else { // Caso padrão ou tipo não definido (pode ser ajustado)
+      setCpfCnpjError(null);
+    }
+    
+    // Se o campo está vazio, limpa o erro
+    if (value.length === 0) {
+      setCpfCnpjError(null);
+    }
+  };
+
+
   const showSpouseForm = formData.owner_type === 'fisica' && 
     formData.owner_marital_status && 
     ['casado', 'uniao_estavel'].includes(formData.owner_marital_status);
@@ -187,9 +225,11 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
             <Input
               id="owner_cpf_cnpj"
               value={formData.owner_cpf_cnpj}
-              onChange={(e) => setFormData({ ...formData, owner_cpf_cnpj: e.target.value })}
+              onChange={handleCpfCnpjChange} // Alterar para usar a nova função
               placeholder={formData.owner_type === 'juridica' ? '00.000.000/0000-00' : '000.000.000-00'}
+              className={cpfCnpjError ? 'border-red-500' : ''} // Adicionar estilo de erro
             />
+            {cpfCnpjError && <p className="text-red-500 text-sm mt-1">{cpfCnpjError}</p>} {/* Exibir erro */}
           </div>
         </div>
 
@@ -256,7 +296,7 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
             value={formData.owner_whatsapp || ''}
             onChange={(e) => setFormData({ ...formData, owner_whatsapp: e.target.value })}
             placeholder="(00) 00000-0000"
-            className="md:w-1/2"
+            className="w-full md:w-1/2"
           />
         </div>
 
@@ -265,15 +305,16 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
         <h4 className="font-semibold">Endereço do Proprietário</h4>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
+          <div className="w-full">
             <Label htmlFor="owner_cep">CEP</Label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full">
               <Input
                 id="owner_cep"
                 value={formData.owner_cep || ''}
                 onChange={(e) => setFormData({ ...formData, owner_cep: formatCEP(e.target.value) })}
                 placeholder="00000-000"
                 maxLength={9}
+                className="flex-1 w-full"
               />
               <Button
                 type="button"
@@ -281,6 +322,7 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
                 size="icon"
                 onClick={handleOwnerCEPSearch}
                 disabled={searchingCEP}
+                className="flex-shrink-0"
               >
                 {searchingCEP ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
@@ -350,7 +392,7 @@ export default function OwnerFormExpanded({ formData, setFormData, propertyId }:
             onChange={(e) => setFormData({ ...formData, owner_state: e.target.value })}
             placeholder="UF"
             maxLength={2}
-            className="md:w-1/4"
+            className="w-full md:w-1/4"
           />
         </div>
       </div>

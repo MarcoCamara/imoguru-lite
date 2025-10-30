@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Eye, Copy, Archive, ArchiveRestore } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplatePreview from '@/components/TemplatePreview';
@@ -26,7 +26,10 @@ interface ShareTemplate {
   fields: string[];
   include_images: boolean;
   max_images: number;
+  photo_columns?: number;
+  photo_placement?: string;
   is_default: boolean;
+  archived?: boolean;
 }
 
 export default function ShareTemplates() {
@@ -40,13 +43,14 @@ export default function ShareTemplates() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [formatWidth, setFormatWidth] = useState(1080);
   const [formatHeight, setFormatHeight] = useState(1080);
+  const [zoomLevel, setZoomLevel] = useState(1.0); // Zoom inicial 100%
 
   const availableFields = [
     'title', 'code', 'purpose', 'property_type', 'status',
     'sale_price', 'rental_price', 'iptu_price', 'condo_price',
     'bedrooms', 'suites', 'bathrooms', 'parking_spaces',
     'total_area', 'useful_area', 'city', 'neighborhood',
-    'street', 'description'
+    'street', 'description', 'property_url', 'line_break'
   ];
 
   const platforms = [
@@ -107,6 +111,17 @@ export default function ShareTemplates() {
     if (!editingTemplate) return;
 
     try {
+      // Se o template sendo salvo é definido como padrão, desmarcar outros padrões na mesma plataforma
+      if (editingTemplate.is_default) {
+        const { error: updateError } = await supabase
+          .from('share_templates')
+          .update({ is_default: false })
+          .eq('platform', editingTemplate.platform)
+          .neq('id', editingTemplate.id);
+
+        if (updateError) throw updateError;
+      }
+
       const { error } = await supabase
         .from('share_templates')
         .upsert({
@@ -117,6 +132,7 @@ export default function ShareTemplates() {
           fields: editingTemplate.fields,
           include_images: editingTemplate.include_images,
           max_images: editingTemplate.max_images,
+          photo_columns: editingTemplate.photo_columns || 2,
           is_default: editingTemplate.is_default,
         });
 
@@ -138,6 +154,51 @@ export default function ShareTemplates() {
         variant: 'destructive',
       });
     }
+  };
+
+  const getPreviewContent = (template: ShareTemplate) => {
+    let content = template.message_format;
+    
+    // Mock data para preview
+    const mockData = {
+      title: 'Casa Moderna com 3 Quartos',
+      code: 'IMO-2024-001',
+      price: 'R$ 850.000,00',
+      type: 'Venda',
+      bedrooms: '3',
+      bathrooms: '2',
+      area: '180m²',
+      description: 'Linda casa moderna em condomínio fechado.',
+      address: 'Rua das Flores, 123',
+      neighborhood: 'Jardim Primavera',
+      city: 'São Paulo',
+      state: 'SP',
+      link: 'https://exemplo.com/imovel/001',
+    };
+
+    // Substituir placeholders
+    Object.entries(mockData).forEach(([key, value]) => {
+      const placeholder = new RegExp(`{{${key}}}`, 'g');
+      content = content.replace(placeholder, value);
+    });
+
+    // Adicionar fotos se incluídas no template
+    if (template.include_images) {
+      const maxImages = template.max_images || 4;
+      const photoColumns = template.photo_columns || 2;
+      let photosHtml = `<div style="display: grid; grid-template-columns: repeat(${photoColumns}, 1fr); gap: 10px; margin: 20px 0;">`;
+      for (let i = 0; i < maxImages; i++) {
+        photosHtml += `<div style="aspect-ratio: 1/1; overflow: hidden; border-radius: 8px;">
+          <img src="https://placehold.co/500x500/e2e8f0/64748b?text=Foto+${i + 1}" 
+               alt="Foto ${i + 1}" 
+               style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>`;
+      }
+      photosHtml += '</div>';
+      content = content + photosHtml;
+    }
+
+    return content;
   };
 
   const handleDelete = async (id: string) => {
@@ -167,6 +228,65 @@ export default function ShareTemplates() {
     }
   };
 
+  const handleDuplicate = async (template: ShareTemplate) => {
+    try {
+      const { error } = await supabase
+        .from('share_templates')
+        .insert({
+          name: `${template.name} (Cópia)`,
+          platform: template.platform,
+          message_format: template.message_format,
+          fields: template.fields,
+          include_images: template.include_images,
+          max_images: template.max_images,
+          photo_columns: template.photo_columns || 2,
+          is_default: false,
+          archived: false,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Template duplicado com sucesso!',
+      });
+
+      loadTemplates();
+    } catch (error) {
+      console.error('Error duplicating template:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível duplicar o template.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleArchive = async (id: string, currentArchived: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('share_templates')
+        .update({ archived: !currentArchived })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: currentArchived ? 'Template desarquivado com sucesso!' : 'Template arquivado com sucesso!',
+      });
+
+      loadTemplates();
+    } catch (error) {
+      console.error('Error toggling archive:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível arquivar/desarquivar o template.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleNew = () => {
     setEditingTemplate({
       id: 'new',
@@ -176,6 +296,7 @@ export default function ShareTemplates() {
       fields: ['title', 'city', 'neighborhood', 'sale_price', 'bedrooms', 'bathrooms', 'parking_spaces', 'total_area'],
       include_images: true,
       max_images: 5,
+      photo_columns: 2,
       is_default: false,
     });
     setDialogOpen(true);
@@ -218,7 +339,7 @@ export default function ShareTemplates() {
                     </CardTitle>
                     <CardDescription className="capitalize">{template.platform}</CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -237,13 +358,31 @@ export default function ShareTemplates() {
                         setEditingTemplate(template);
                         setDialogOpen(true);
                       }}
+                      title="Editar"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => handleDuplicate(template)}
+                      title="Duplicar"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleToggleArchive(template.id, template.archived || false)}
+                      title={template.archived ? 'Desarquivar' : 'Arquivar'}
+                    >
+                      {template.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDelete(template.id)}
+                      title="Deletar"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -278,8 +417,7 @@ export default function ShareTemplates() {
             </DialogHeader>
 
             {editingTemplate && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
                   <Label htmlFor="name">Nome do Template</Label>
                   <Input
@@ -343,27 +481,6 @@ export default function ShareTemplates() {
                   </Tabs>
                 </div>
 
-                <div>
-                  <Label>Campos Disponíveis</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {availableFields.map((field) => (
-                      <Badge
-                        key={field}
-                        variant={editingTemplate.fields.includes(field) ? 'default' : 'outline'}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          const fields = editingTemplate.fields.includes(field)
-                            ? editingTemplate.fields.filter((f) => f !== field)
-                            : [...editingTemplate.fields, field];
-                          setEditingTemplate({ ...editingTemplate, fields });
-                        }}
-                      >
-                        {field}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="include_images">Incluir Imagens</Label>
@@ -381,22 +498,65 @@ export default function ShareTemplates() {
                 </div>
 
                 {editingTemplate.include_images && (
-                  <div>
-                    <Label htmlFor="max_images">Máximo de Imagens</Label>
-                    <Input
-                      id="max_images"
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={editingTemplate.max_images}
-                      onChange={(e) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          max_images: parseInt(e.target.value),
-                        })
-                      }
-                    />
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="max_images">Máximo de Imagens</Label>
+                        <Input
+                          id="max_images"
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={editingTemplate.max_images}
+                          onChange={(e) =>
+                            setEditingTemplate({
+                              ...editingTemplate,
+                              max_images: parseInt(e.target.value),
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="photo_columns">Colunas de Fotos</Label>
+                      <Input
+                        id="photo_columns"
+                        type="number"
+                        min="1"
+                        max="4"
+                        value={editingTemplate.photo_columns || 2}
+                        onChange={(e) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            photo_columns: parseInt(e.target.value),
+                          })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Número de colunas (1-4)
+                      </p>
+                    </div>
                   </div>
+                  <div>
+                    <Label htmlFor="photo_placement">Posicionamento das Fotos</Label>
+                    <Select
+                      value={editingTemplate.photo_placement || 'after_text'}
+                      onValueChange={(value) =>
+                        setEditingTemplate({ ...editingTemplate, photo_placement: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="before_text">Antes do Texto</SelectItem>
+                        <SelectItem value="after_text">Depois do Texto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Onde as fotos serão posicionadas
+                    </p>
+                  </div>
+                  </>
                 )}
 
                 <div className="flex items-center justify-between">
@@ -424,34 +584,61 @@ export default function ShareTemplates() {
                     }}
                   />
 
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleSave}>Salvar</Button>
-                  </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSave}>Salvar</Button>
                 </div>
 
-                <div className="sticky top-0">
-                  <TemplatePreviewLive
-                    content={editingTemplate.message_format}
-                    width={formatWidth}
-                    height={formatHeight}
-                    type="share"
-                  />
-                </div>
+                {/* Preview em Tempo Real - Largura Total */}
+                <TemplatePreviewLive
+                  content={editingTemplate.message_format}
+                  width={formatWidth}
+                  height={formatHeight}
+                  type="share"
+                  zoomLevel={zoomLevel}
+                  onZoomChange={setZoomLevel}
+                  photoColumns={editingTemplate.photo_columns || 2}
+                  maxPhotos={editingTemplate.max_images || 4}
+                  showPhotos={editingTemplate.include_images}
+                />
               </div>
             )}
           </DialogContent>
         </Dialog>
 
         {previewTemplate && (
-          <TemplatePreview
-            open={previewOpen}
-            onOpenChange={setPreviewOpen}
-            template={previewTemplate}
-            type="share"
-          />
+          <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+            <DialogContent className="max-w-[100vw] w-[100vw] h-[100vh] max-h-[100vh] p-0 m-0">
+              <div 
+                className="h-full w-full flex items-center justify-center bg-gray-900 overflow-hidden"
+                style={{
+                  padding: '20px',
+                }}
+              >
+                <div 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    maxWidth: `${formatWidth}px`,
+                    maxHeight: `${formatHeight}px`,
+                    aspectRatio: `${formatWidth} / ${formatHeight}`,
+                  }}
+                  className="flex items-center justify-center"
+                >
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: getPreviewContent(previewTemplate) }}
+                    className="prose prose-sm max-w-none bg-white shadow-2xl w-full h-full overflow-auto"
+                    style={{
+                      padding: '40px',
+                      aspectRatio: `${formatWidth} / ${formatHeight}`,
+                    }}
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </div>

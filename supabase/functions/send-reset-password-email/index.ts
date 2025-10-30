@@ -49,7 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/reset-password`
+        redirectTo: `${Deno.env.get('PUBLIC_FRONTEND_URL') ?? Deno.env.get('SUPABASE_URL')}/reset-password` // Usar PUBLIC_FRONTEND_URL ou SUPABASE_URL
       }
     });
 

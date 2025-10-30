@@ -2,6 +2,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { validateNumericField } from '@/lib/validationUtils';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface AreaFormProps {
   formData: any;
@@ -9,13 +10,71 @@ interface AreaFormProps {
 }
 
 export default function AreaForm({ formData, setFormData }: AreaFormProps) {
+  const [usefulAreaError, setUsefulAreaError] = useState<string | null>(null);
+  const [totalAreaError, setTotalAreaError] = useState<string | null>(null);
+  const [builtAreaError, setBuiltAreaError] = useState<string | null>(null);
+  const [constructionYearError, setConstructionYearError] = useState<string | null>(null);
+  const [bedroomsError, setBedroomsError] = useState<string | null>(null);
+  const [suitesError, setSuitesError] = useState<string | null>(null);
+  const [bathroomsError, setBathroomsError] = useState<string | null>(null);
+  const [parkingSpacesError, setParkingSpacesError] = useState<string | null>(null);
+  const [coveredParkingError, setCoveredParkingError] = useState<string | null>(null);
+  const [uncoveredParkingError, setUncoveredParkingError] = useState<string | null>(null);
+
   const handleAreaChange = (field: string, value: string) => {
     const numValue = value ? parseFloat(value) : null;
-    if (numValue && !validateNumericField(numValue, 999999.99)) {
-      toast.error('Área muito grande! Máximo: 999.999,99 m²');
+    const maxValue = 999999.99;
+
+    // Limpar erros existentes
+    if (field === 'useful_area') setUsefulAreaError(null);
+    if (field === 'total_area') setTotalAreaError(null);
+    if (field === 'built_area') setBuiltAreaError(null);
+
+    if (numValue !== null && !validateNumericField(numValue, maxValue)) {
+      const errorMessage = `Área muito grande! Máximo: ${maxValue.toLocaleString('pt-BR')} m²`;
+      if (field === 'useful_area') setUsefulAreaError(errorMessage);
+      if (field === 'total_area') setTotalAreaError(errorMessage);
+      if (field === 'built_area') setBuiltAreaError(errorMessage);
       return;
     }
     setFormData({ ...formData, [field]: numValue });
+  };
+
+  const handleIntInputChange = (
+    field: string,
+    value: string,
+    setError: React.Dispatch<React.SetStateAction<string | null>>,
+    min: number = 0,
+    max: number = Infinity,
+  ) => {
+    setError(null);
+
+    if (value === '') {
+      setFormData((prevData: any) => ({ ...prevData, [field]: null }));
+      return;
+    }
+
+    const numValue = parseInt(value, 10);
+
+    if (isNaN(numValue)) {
+      setError('Somente números são permitidos.');
+      setFormData((prevData: any) => ({ ...prevData, [field]: null }));
+      return;
+    }
+
+    if (numValue < min) {
+      setError(`Mínimo de ${min}.`);
+      setFormData((prevData: any) => ({ ...prevData, [field]: numValue }));
+      return;
+    }
+
+    if (numValue > max) {
+      setError(`Máximo de ${max}.`);
+      setFormData((prevData: any) => ({ ...prevData, [field]: numValue }));
+      return;
+    }
+
+    setFormData((prevData: any) => ({ ...prevData, [field]: numValue }));
   };
 
   return (
@@ -31,7 +90,9 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             value={formData.useful_area || ''}
             onChange={(e) => handleAreaChange('useful_area', e.target.value)}
             placeholder="0,00"
+            className={usefulAreaError ? 'border-red-500' : ''}
           />
+          {usefulAreaError && <p className="text-red-500 text-sm mt-1">{usefulAreaError}</p>}
         </div>
 
         <div>
@@ -44,7 +105,23 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             value={formData.total_area || ''}
             onChange={(e) => handleAreaChange('total_area', e.target.value)}
             placeholder="0,00"
+            className={totalAreaError ? 'border-red-500' : ''}
           />
+          {totalAreaError && <p className="text-red-500 text-sm mt-1">{totalAreaError}</p>}
+        </div>
+        <div>
+          <Label htmlFor="built_area">Área Construída (m²)</Label>
+          <Input
+            id="built_area"
+            type="number"
+            step="0.01"
+            max="999999.99"
+            value={formData.built_area || ''}
+            onChange={(e) => handleAreaChange('built_area', e.target.value)}
+            placeholder="0,00"
+            className={builtAreaError ? 'border-red-500' : ''}
+          />
+          {builtAreaError && <p className="text-red-500 text-sm mt-1">{builtAreaError}</p>}
         </div>
 
         <div>
@@ -55,9 +132,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             min="1900"
             max={new Date().getFullYear() + 5}
             value={formData.construction_year || ''}
-            onChange={(e) => setFormData({ ...formData, construction_year: e.target.value ? parseInt(e.target.value) : null })}
+            onChange={(e) => handleIntInputChange('construction_year', e.target.value, setConstructionYearError, 1900, new Date().getFullYear() + 5)}
             placeholder="Ex: 2020"
+            className={constructionYearError ? 'border-red-500' : ''}
           />
+          {constructionYearError && <p className="text-red-500 text-sm mt-1">{constructionYearError}</p>}
         </div>
       </div>
 
@@ -68,9 +147,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             id="bedrooms"
             type="number"
             min="0"
-            value={formData.bedrooms || 0}
-            onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 0 })}
+            value={formData.bedrooms || ''}
+            onChange={(e) => handleIntInputChange('bedrooms', e.target.value, setBedroomsError)}
+            className={bedroomsError ? 'border-red-500' : ''}
           />
+          {bedroomsError && <p className="text-red-500 text-sm mt-1">{bedroomsError}</p>}
         </div>
 
         <div>
@@ -79,9 +160,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             id="suites"
             type="number"
             min="0"
-            value={formData.suites || 0}
-            onChange={(e) => setFormData({ ...formData, suites: parseInt(e.target.value) || 0 })}
+            value={formData.suites || ''}
+            onChange={(e) => handleIntInputChange('suites', e.target.value, setSuitesError)}
+            className={suitesError ? 'border-red-500' : ''}
           />
+          {suitesError && <p className="text-red-500 text-sm mt-1">{suitesError}</p>}
         </div>
 
         <div>
@@ -90,9 +173,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             id="bathrooms"
             type="number"
             min="0"
-            value={formData.bathrooms || 0}
-            onChange={(e) => setFormData({ ...formData, bathrooms: parseInt(e.target.value) || 0 })}
+            value={formData.bathrooms || ''}
+            onChange={(e) => handleIntInputChange('bathrooms', e.target.value, setBathroomsError)}
+            className={bathroomsError ? 'border-red-500' : ''}
           />
+          {bathroomsError && <p className="text-red-500 text-sm mt-1">{bathroomsError}</p>}
         </div>
 
         <div>
@@ -101,9 +186,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             id="parking_spaces"
             type="number"
             min="0"
-            value={formData.parking_spaces || 0}
-            onChange={(e) => setFormData({ ...formData, parking_spaces: parseInt(e.target.value) || 0 })}
+            value={formData.parking_spaces || ''}
+            onChange={(e) => handleIntInputChange('parking_spaces', e.target.value, setParkingSpacesError)}
+            className={parkingSpacesError ? 'border-red-500' : ''}
           />
+          {parkingSpacesError && <p className="text-red-500 text-sm mt-1">{parkingSpacesError}</p>}
         </div>
       </div>
 
@@ -114,9 +201,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             id="covered_parking"
             type="number"
             min="0"
-            value={formData.covered_parking || 0}
-            onChange={(e) => setFormData({ ...formData, covered_parking: parseInt(e.target.value) || 0 })}
+            value={formData.covered_parking || ''}
+            onChange={(e) => handleIntInputChange('covered_parking', e.target.value, setCoveredParkingError)}
+            className={coveredParkingError ? 'border-red-500' : ''}
           />
+          {coveredParkingError && <p className="text-red-500 text-sm mt-1">{coveredParkingError}</p>}
         </div>
 
         <div>
@@ -125,9 +214,11 @@ export default function AreaForm({ formData, setFormData }: AreaFormProps) {
             id="uncovered_parking"
             type="number"
             min="0"
-            value={formData.uncovered_parking || 0}
-            onChange={(e) => setFormData({ ...formData, uncovered_parking: parseInt(e.target.value) || 0 })}
+            value={formData.uncovered_parking || ''}
+            onChange={(e) => handleIntInputChange('uncovered_parking', e.target.value, setUncoveredParkingError)}
+            className={uncoveredParkingError ? 'border-red-500' : ''}
           />
+          {uncoveredParkingError && <p className="text-red-500 text-sm mt-1">{uncoveredParkingError}</p>}
         </div>
       </div>
     </div>

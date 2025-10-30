@@ -275,6 +275,36 @@ export default function StatisticsTab({ propertyId }: StatisticsTabProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Share History Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Compartilhamentos</CardTitle>
+          <CardDescription>Todas as vezes que o imóvel foi compartilhado</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4">Data/Hora</th>
+                  <th className="text-left py-3 px-4">Plataforma(s)</th>
+                  <th className="text-left py-3 px-4">Destinatário</th>
+                  <th className="text-left py-3 px-4">Contato</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Placeholder para os dados do histórico de compartilhamento */}
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-muted-foreground">
+                    Nenhum histórico de compartilhamento encontrado. (A implementação da busca de dados será feita após a correção do Docker).
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

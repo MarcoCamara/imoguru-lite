@@ -1,0 +1,6 @@
+ALTER TABLE public.share_templates
+ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE public.authorization_templates
+ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+

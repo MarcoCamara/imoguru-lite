@@ -36,6 +36,10 @@ npm i
 npm run dev
 ```
 
+Para instruções detalhadas sobre a configuração do ambiente de desenvolvimento local (Supabase e Frontend), incluindo a inicialização dos serviços, consulte o arquivo [instrucoes.md](./instrucoes.md).
+
+---
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

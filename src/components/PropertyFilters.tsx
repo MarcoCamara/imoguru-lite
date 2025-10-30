@@ -7,13 +7,19 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
 import { PROPERTY_TYPES, PROPERTY_CATEGORIES } from '@/lib/propertyConstants';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PropertyFiltersProps {
   properties: any[];
   onFilterChange: (filtered: any[]) => void;
+  showCompanyFilter?: boolean;
 }
 
-export default function PropertyFilters({ properties, onFilterChange }: PropertyFiltersProps) {
+export default function PropertyFilters({ properties, onFilterChange, showCompanyFilter = true }: PropertyFiltersProps) {
+  const { isAdmin } = useAuth();
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
+  
   const [filters, setFilters] = useState({
     purpose: 'all',
     propertyCategory: 'all',
@@ -23,6 +29,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
     city: '',
     state: '',
     condoName: '',
+    companyId: 'all',
     showArchived: false,
     minBedrooms: 0,
     minSuites: 0,
@@ -42,8 +49,28 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
   });
 
   useEffect(() => {
+    if (isAdmin && showCompanyFilter) {
+      fetchCompanies();
+    }
+  }, [isAdmin, showCompanyFilter]);
+
+  useEffect(() => {
     applyFilters();
   }, [filters, properties]);
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
 
   const applyFilters = () => {
     let filtered = [...properties];
@@ -51,6 +78,11 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
     // Filtrar arquivados
     if (!filters.showArchived) {
       filtered = filtered.filter(p => !p.archived);
+    }
+
+    // Filtrar por empresa (apenas para admin)
+    if (isAdmin && showCompanyFilter && filters.companyId !== 'all') {
+      filtered = filtered.filter(p => p.company_id === filters.companyId);
     }
 
     if (filters.purpose !== 'all') {
@@ -138,6 +170,7 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
       city: '',
       state: '',
       condoName: '',
+      companyId: 'all',
       showArchived: false,
       minBedrooms: 0,
       minSuites: 0,
@@ -167,7 +200,29 @@ export default function PropertyFilters({ properties, onFilterChange }: Property
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3">
+      <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${isAdmin && showCompanyFilter ? 'lg:grid-cols-9' : 'lg:grid-cols-8'}`}>
+        {isAdmin && showCompanyFilter && (
+          <div className="space-y-2">
+            <Label>Empresa</Label>
+            <Select
+              value={filters.companyId}
+              onValueChange={(value) => setFilters({ ...filters, companyId: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {companies.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        
         <div className="space-y-2">
           <Label>Finalidade</Label>
           <Select

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Home, TrendingUp, Package, Share2, DollarSign } from 'lucide-react';
+import { Building2, Home, TrendingUp, Package, Share2, DollarSign, Clock } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, Legend } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Metrics {
   total: number;
@@ -27,9 +28,11 @@ const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 interface DashboardMetricsProps {
   showCharts?: boolean;
+  averageResponseTime?: string | null;
 }
 
-export default function DashboardMetrics({ showCharts = true }: DashboardMetricsProps) {
+export default function DashboardMetrics({ showCharts = true, averageResponseTime = null }: DashboardMetricsProps) {
+  const { user, isAdmin } = useAuth();
   const [metrics, setMetrics] = useState<Metrics>({
     total: 0,
     forSale: 0,
@@ -43,19 +46,49 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
     sharesByPlatform: { whatsapp: 0, email: 0, facebook: 0, instagram: 0 },
   });
   const [typeDistribution, setTypeDistribution] = useState<any[]>([]);
-  const [averageValues, setAverageValues] = useState<any[]>([]);
+  const [averageSaleValues, setAverageSaleValues] = useState<any[]>([]);
+  const [averageRentalValues, setAverageRentalValues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userCompanyId, setUserCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMetrics();
-  }, []);
+    if (user && !isAdmin) {
+      fetchUserCompany();
+    } else {
+      fetchMetrics();
+    }
+  }, [user, isAdmin]);
 
-  const fetchMetrics = async () => {
+  const fetchUserCompany = async () => {
     try {
-      const { data: properties, error } = await supabase
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      setUserCompanyId(data?.company_id || null);
+      fetchMetrics(data?.company_id);
+    } catch (error) {
+      console.error('Error fetching user company:', error);
+      fetchMetrics();
+    }
+  };
+
+  const fetchMetrics = async (companyId?: string | null) => {
+    try {
+      let query = supabase
         .from('properties')
-        .select('purpose, status, property_type, sale_price, rental_price')
+        .select('purpose, status, property_type, sale_price, rental_price, company_id')
         .eq('archived', false);
+      
+      // Filtrar por empresa se não for admin
+      if (!isAdmin && companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      const { data: properties, error } = await query;
 
       if (error) throw error;
 
@@ -77,36 +110,68 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
       const typeData = Object.entries(typeCount).map(([name, value]) => ({ name, value }));
       setTypeDistribution(typeData);
 
-      // Valor médio por tipo
-      const typePrices: Record<string, number[]> = {};
+      // Valor médio por tipo - VENDA
+      const typeSalePrices: Record<string, number[]> = {};
       properties?.forEach(p => {
-        const price = p.purpose === 'venda' ? p.sale_price : p.rental_price;
-        if (price) {
-          if (!typePrices[p.property_type]) typePrices[p.property_type] = [];
-          typePrices[p.property_type].push(Number(price));
+        if ((p.purpose === 'venda' || p.purpose === 'venda_locacao') && p.sale_price) {
+          if (!typeSalePrices[p.property_type]) typeSalePrices[p.property_type] = [];
+          typeSalePrices[p.property_type].push(Number(p.sale_price));
         }
       });
-      const avgData = Object.entries(typePrices).map(([name, prices]) => ({
+      const avgSaleData = Object.entries(typeSalePrices).map(([name, prices]) => ({
         name,
         average: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
       }));
-      setAverageValues(avgData);
+      setAverageSaleValues(avgSaleData);
+
+      // Valor médio por tipo - LOCAÇÃO
+      const typeRentalPrices: Record<string, number[]> = {};
+      properties?.forEach(p => {
+        if ((p.purpose === 'locacao' || p.purpose === 'venda_locacao') && p.rental_price) {
+          if (!typeRentalPrices[p.property_type]) typeRentalPrices[p.property_type] = [];
+          typeRentalPrices[p.property_type].push(Number(p.rental_price));
+        }
+      });
+      const avgRentalData = Object.entries(typeRentalPrices).map(([name, prices]) => ({
+        name,
+        average: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+      }));
+      setAverageRentalValues(avgRentalData);
 
       // Estatísticas de compartilhamento
       const { data: stats, error: statsError } = await supabase
         .from('property_statistics')
-        .select('shares_whatsapp, shares_email, shares_facebook, shares_instagram');
+        .select('property_id, shares_whatsapp, shares_email, shares_facebook, shares_instagram');
 
       if (!statsError && stats) {
-        const totalShares = stats.reduce((acc, s) => 
-          acc + s.shares_whatsapp + s.shares_email + s.shares_facebook + s.shares_instagram, 0);
+        let uniqueSharedPropertiesCount = 0;
+        const sharedPropertyIds = new Set<string>();
+        let totalPlatformShares = 0;
         const sharesByPlatform = {
-          whatsapp: stats.reduce((acc, s) => acc + s.shares_whatsapp, 0),
-          email: stats.reduce((acc, s) => acc + s.shares_email, 0),
-          facebook: stats.reduce((acc, s) => acc + s.shares_facebook, 0),
-          instagram: stats.reduce((acc, s) => acc + s.shares_instagram, 0),
+          whatsapp: 0,
+          email: 0,
+          facebook: 0,
+          instagram: 0,
         };
-        setStatistics({ totalShares, sharesByPlatform });
+
+        stats.forEach(s => {
+          const propertyHasShares = s.shares_whatsapp > 0 || s.shares_email > 0 || s.shares_facebook > 0 || s.shares_instagram > 0;
+          if (propertyHasShares && s.property_id) {
+            sharedPropertyIds.add(s.property_id);
+          }
+
+          totalPlatformShares += s.shares_whatsapp + s.shares_email + s.shares_facebook + s.shares_instagram;
+          sharesByPlatform.whatsapp += s.shares_whatsapp;
+          sharesByPlatform.email += s.shares_email;
+          sharesByPlatform.facebook += s.shares_facebook;
+          sharesByPlatform.instagram += s.shares_instagram;
+        });
+        
+        uniqueSharedPropertiesCount = sharedPropertyIds.size;
+
+        // O 'totalShares' agora representa o número de propriedades únicas que foram compartilhadas
+        // e 'totalPlatformShares' representa a soma de todos os compartilhamentos por plataforma para o Card.
+        setStatistics({ totalShares: uniqueSharedPropertiesCount, sharesByPlatform });
       }
     } catch (error) {
       console.error('Erro ao buscar métricas:', error);
@@ -135,7 +200,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
   return (
     <div className="space-y-6 mb-6">
       {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total</CardTitle>
@@ -195,6 +260,19 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
           </CardContent>
         </Card>
 
+        {averageResponseTime && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{averageResponseTime}</div>
+              <p className="text-xs text-muted-foreground">Atendimento</p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Compartilhamentos</CardTitle>
@@ -209,7 +287,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
 
       {/* Gráficos */}
       {showCharts && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {typeDistribution.length > 0 && (
             <Card>
               <CardHeader>
@@ -233,28 +311,81 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                    <Legend wrapperStyle={{ fontSize: '12px', paddingLeft: '10px' }} layout="vertical" align="right" verticalAlign="middle" />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           )}
 
-          {averageValues.length > 0 && (
+          {averageSaleValues.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Valor Médio por Tipo</CardTitle>
+                <CardTitle className="text-sm">Valor Médio - Venda</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={averageValues}>
-                    <XAxis dataKey="name" fontSize={9} tick={{ fontSize: 9 }} />
-                    <YAxis fontSize={9} tick={{ fontSize: 9 }} />
+                  <BarChart data={averageSaleValues}>
+                    <XAxis 
+                      dataKey="name" 
+                      fontSize={10} 
+                      tick={{ fontSize: 10 }} 
+                      interval={0} 
+                      angle={-45} 
+                      textAnchor="end"
+                      height={40}
+                      tickFormatter={(value) => {
+                        const maxLength = 10;
+                        return value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
+                      }}
+                    />
+                    <YAxis 
+                      fontSize={10} 
+                      tick={{ fontSize: 10 }} 
+                      tickFormatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { notation: 'compact', compactDisplay: 'short' })}`}
+                    />
                     <Tooltip 
                       formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`}
                       contentStyle={{ fontSize: 10 }}
                     />
-                    <Bar dataKey="average" fill="#8b5cf6" />
+                    <Bar dataKey="average" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {averageRentalValues.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Valor Médio - Locação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={averageRentalValues}>
+                    <XAxis 
+                      dataKey="name" 
+                      fontSize={10} 
+                      tick={{ fontSize: 10 }} 
+                      interval={0} 
+                      angle={-45} 
+                      textAnchor="end"
+                      height={40}
+                      tickFormatter={(value) => {
+                        const maxLength = 10;
+                        return value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
+                      }}
+                    />
+                    <YAxis 
+                      fontSize={10} 
+                      tick={{ fontSize: 10 }} 
+                      tickFormatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { notation: 'compact', compactDisplay: 'short' })}`}
+                    />
+                    <Tooltip 
+                      formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`}
+                      contentStyle={{ fontSize: 10 }}
+                    />
+                    <Bar dataKey="average" fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -284,7 +415,7 @@ export default function DashboardMetrics({ showCharts = true }: DashboardMetrics
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                    <Legend wrapperStyle={{ fontSize: '12px', paddingLeft: '10px' }} layout="vertical" align="right" verticalAlign="middle" />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>

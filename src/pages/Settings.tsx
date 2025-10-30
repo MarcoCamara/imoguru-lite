@@ -13,9 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BrandingPreview from '@/components/BrandingPreview';
 import CompanyManagement from '@/components/CompanyManagement';
 import UserManagement from '@/components/UserManagement';
+import { ApiKeysManagement } from '@/components/ApiKeysManagement';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SystemSettings {
-  app_name: string;
+  app_name: string; // Será 'Versão do Sistema'
+  system_display_name?: string; // Novo campo para o 'Nome do Sistema' exibido
   primary_color: string;
   secondary_color: string;
   max_images_per_property: number;
@@ -30,6 +33,8 @@ interface SystemSettings {
   logo_size_login?: number;
   show_dashboard_metrics?: boolean;
   show_dashboard_charts?: boolean;
+  font_family?: string; // Novo campo
+  font_size?: number; // Novo campo
 }
 
 export default function Settings() {
@@ -39,7 +44,8 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [settings, setSettings] = useState<SystemSettings>({
-    app_name: 'ImoGuru',
+    app_name: 'LITE 1.0',
+    system_display_name: 'ImoGuru Rose Real State',
     primary_color: '#2563eb',
     secondary_color: '#7c3aed',
     max_images_per_property: 20,
@@ -52,6 +58,8 @@ export default function Settings() {
     logo_size_login: 48,
     show_dashboard_metrics: true,
     show_dashboard_charts: true,
+    font_family: 'Arial',
+    font_size: 24,
   });
 
   useEffect(() => {
@@ -79,7 +87,27 @@ export default function Settings() {
     try {
       const { data, error } = await supabase
         .from('system_settings')
-        .select('setting_key, setting_value');
+        .select('setting_key, setting_value')
+        .in('setting_key', [
+          'app_name',
+          'system_display_name',
+          'primary_color',
+          'secondary_color',
+          'max_images_per_property',
+          'max_image_size_mb',
+          'video_upload_enabled',
+          'video_links_enabled',
+          'logo_url',
+          'favicon_url',
+          'logo_size_mobile',
+          'logo_size_tablet',
+          'logo_size_desktop',
+          'logo_size_login',
+          'show_dashboard_metrics',
+          'show_dashboard_charts',
+          'font_family',
+          'font_size',
+        ]);
 
       if (error) throw error;
 
@@ -249,10 +277,13 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="system" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          {/* TabsList com 5 itens: Sistema, Empresas, Usuários, APIs, Avançado */}
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="system">Sistema</TabsTrigger>
             <TabsTrigger value="companies">Empresas</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="apis">APIs</TabsTrigger>
+            <TabsTrigger value="advanced">Avançado</TabsTrigger>
           </TabsList>
 
           <TabsContent value="system" className="space-y-6">
@@ -261,133 +292,203 @@ export default function Settings() {
               <CardTitle>Branding</CardTitle>
               <CardDescription>Configure a identidade visual do sistema</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {/* Novo campo para Nome do Sistema */}
               <div>
-                <Label htmlFor="app_name">Nome do Sistema</Label>
+                <Label htmlFor="system_display_name">Nome do Sistema</Label>
+                <Input
+                  id="system_display_name"
+                  value={settings.system_display_name || ''}
+                  onChange={(e) => setSettings({ ...settings, system_display_name: e.target.value })}
+                  placeholder="Nome completo do sistema (Ex: ImoGuru Rose Real State)"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nome que aparecerá no sistema, na tela de login e nas comunicações
+                </p>
+              </div>
+
+              {/* Campo existente renomeado para Versão do Sistema */}
+              <div>
+                <Label htmlFor="app_name">Versão do Sistema</Label>
                 <Input
                   id="app_name"
                   value={settings.app_name}
                   onChange={(e) => setSettings({ ...settings, app_name: e.target.value })}
-                  placeholder="ImoGuru"
+                  placeholder="LITE 1.0"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Nome que aparecerá no sistema e nas comunicações
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Logo do Sistema</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
-                    {settings.logo_url ? (
-                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
-                    ) : (
-                      <Building2 className="h-10 w-10 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg,image/svg+xml"
-                      className="cursor-pointer"
-                      onChange={handleLogoUpload}
-                      disabled={uploading}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Upload de logo personalizado (PNG, JPG ou SVG, máx. 2MB)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Favicon</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
-                    {settings.favicon_url ? (
-                      <img src={settings.favicon_url} alt="Favicon" className="w-full h-full object-contain" />
-                    ) : (
-                      <Building2 className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      type="file"
-                      accept="image/png,image/x-icon,image/vnd.microsoft.icon"
-                      className="cursor-pointer"
-                      onChange={handleFaviconUpload}
-                      disabled={uploading}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Upload de favicon (ICO, PNG 32x32, máx. 500KB)
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <Label>Tamanho do Logo no Dashboard (pixels)</Label>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="logo_size_mobile" className="text-xs text-muted-foreground">
-                      Mobile
-                    </Label>
-                    <Input
-                      id="logo_size_mobile"
-                      type="number"
-                      min="24"
-                      max="80"
-                      value={settings.logo_size_mobile}
-                      onChange={(e) => setSettings({ ...settings, logo_size_mobile: parseInt(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="logo_size_tablet" className="text-xs text-muted-foreground">
-                      Tablet
-                    </Label>
-                    <Input
-                      id="logo_size_tablet"
-                      type="number"
-                      min="24"
-                      max="96"
-                      value={settings.logo_size_tablet}
-                      onChange={(e) => setSettings({ ...settings, logo_size_tablet: parseInt(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="logo_size_desktop" className="text-xs text-muted-foreground">
-                      Desktop
-                    </Label>
-                    <Input
-                      id="logo_size_desktop"
-                      type="number"
-                      min="24"
-                      max="120"
-                      value={settings.logo_size_desktop}
-                      onChange={(e) => setSettings({ ...settings, logo_size_desktop: parseInt(e.target.value) })}
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ajuste o tamanho do logo para cada tipo de dispositivo no dashboard
+                  Ex: LITE 1.0, Enterprise Edition
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="logo_size_login">Tamanho do Logo na Tela de Login (pixels)</Label>
+              {/* Font Family Selection */}
+              <div>
+                <Label htmlFor="font_family">Fonte do Sistema</Label>
+                <Select
+                  value={settings.font_family}
+                  onValueChange={(value) => setSettings({ ...settings, font_family: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma fonte" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Verdana">Verdana</SelectItem>
+                    <SelectItem value="Helvetica">Helvetica</SelectItem>
+                    <SelectItem value="Tahoma">Tahoma</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Courier New">Courier New</SelectItem>
+                    <SelectItem value="Lucida Console">Lucida Console</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Escolha a fonte principal para a versão do sistema
+                </p>
+              </div>
+
+              {/* Font Size Input */}
+              <div>
+                <Label htmlFor="font_size">Tamanho da Fonte (px)</Label>
                 <Input
-                  id="logo_size_login"
+                  id="font_size"
                   type="number"
-                  min="24"
-                  max="120"
-                  value={settings.logo_size_login}
-                  onChange={(e) => setSettings({ ...settings, logo_size_login: parseInt(e.target.value) })}
+                  min="12"
+                  max="48"
+                  value={settings.font_size}
+                  onChange={(e) => setSettings({ ...settings, font_size: parseInt(e.target.value) })}
+                  placeholder="24"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Ajuste o tamanho do logo exibido na tela de login
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ajuste o tamanho da fonte para a versão do sistema
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Logo do Sistema e Favicon em uma nova linha */}
+              <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Logo do Sistema */}
+                <div className="space-y-2">
+                  <Label>Logo do Sistema</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="h-20 w-20 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
+                      {settings.logo_url ? (
+                        <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <Building2 className="h-10 w-10 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+                        className="cursor-pointer"
+                        onChange={handleLogoUpload}
+                        disabled={uploading}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload de logo personalizado (PNG, JPG ou SVG, máx. 2MB)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Favicon */}
+                <div className="space-y-2">
+                  <Label>Favicon</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
+                      {settings.favicon_url ? (
+                        <img src={settings.favicon_url} alt="Favicon" className="w-full h-full object-contain" />
+                      ) : (
+                        <Building2 className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/png,image/x-icon,image/vnd.microsoft.icon"
+                        className="cursor-pointer"
+                        onChange={handleFaviconUpload}
+                        disabled={uploading}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload de favicon (ICO, PNG 32x32, máx. 500KB)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tamanho do Logo no Dashboard (pixels) e Tamanho do Logo na Tela de Login (pixels) em uma nova linha */}
+              <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Tamanho do Logo no Dashboard (pixels) - Mais largo */}
+                <div className="space-y-3">
+                  <Label>Tamanho do Logo no Dashboard (pixels)</Label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="logo_size_mobile" className="text-xs text-muted-foreground">
+                        Mobile
+                      </Label>
+                      <Input
+                        id="logo_size_mobile"
+                        type="number"
+                        min="24"
+                        max="80"
+                        value={settings.logo_size_mobile}
+                        onChange={(e) => setSettings({ ...settings, logo_size_mobile: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="logo_size_tablet" className="text-xs text-muted-foreground">
+                        Tablet
+                      </Label>
+                      <Input
+                        id="logo_size_tablet"
+                        type="number"
+                        min="24"
+                        max="96"
+                        value={settings.logo_size_tablet}
+                        onChange={(e) => setSettings({ ...settings, logo_size_tablet: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="logo_size_desktop" className="text-xs text-muted-foreground">
+                        Desktop
+                      </Label>
+                      <Input
+                        id="logo_size_desktop"
+                        type="number"
+                        min="24"
+                        max="120"
+                        value={settings.logo_size_desktop}
+                        onChange={(e) => setSettings({ ...settings, logo_size_desktop: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ajuste o tamanho do logo para cada tipo de dispositivo no dashboard
+                  </p>
+                </div>
+
+                {/* Tamanho do Logo na Tela de Login (pixels) - Agora com lg:col-span-2 para caber o título */}
+                <div className="space-y-2">
+                  <Label htmlFor="logo_size_login">Tamanho do Logo na Tela de Login (pixels)</Label>
+                  <Input
+                    id="logo_size_login"
+                    type="number"
+                    min="24"
+                    max="120"
+                    value={settings.logo_size_login}
+                    onChange={(e) => setSettings({ ...settings, logo_size_login: parseInt(e.target.value) })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ajuste o tamanho do logo exibido na tela de login
+                  </p>
+                </div>
+              </div>
+
+              {/* Cores - Em uma nova linha */}
+              <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="primary_color">Cor Primária</Label>
                   <div className="flex gap-2">
@@ -429,8 +530,7 @@ export default function Settings() {
               <CardTitle>Configurações de Mídia</CardTitle>
               <CardDescription>Defina limites para upload de imagens e vídeos</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="max_images">Máximo de Imagens por Imóvel</Label>
                   <Input
@@ -457,8 +557,7 @@ export default function Settings() {
                     }
                   />
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
+              <div className="col-span-1 sm:col-span-2 flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="video_upload">Permitir Upload de Vídeos</Label>
                   <p className="text-sm text-muted-foreground">
@@ -473,7 +572,7 @@ export default function Settings() {
                   }
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className="col-span-1 sm:col-span-2 flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="video_links">Permitir Links de Vídeos</Label>
                   <p className="text-sm text-muted-foreground">
@@ -492,11 +591,13 @@ export default function Settings() {
           </Card>
 
           <BrandingPreview
-            appName={settings.app_name}
+            appName={settings.system_display_name || settings.app_name}
+            appVersion={settings.app_name} // Passar a versão do sistema
             primaryColor={settings.primary_color}
             secondaryColor={settings.secondary_color}
             logoUrl={settings.logo_url}
             faviconUrl={settings.favicon_url}
+            logoSizeDesktop={settings.logo_size_desktop} // Passar o tamanho do logo para desktop
           />
 
           <Card>
@@ -538,36 +639,6 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciamento Avançado</CardTitle>
-              <CardDescription>Acesse configurações avançadas do sistema</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => navigate('/share-templates')}
-              >
-                Templates de Compartilhamento
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => navigate('/authorization-templates')}
-              >
-                Templates de Autorização
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => navigate('/print-templates')}
-              >
-                Templates de Impressão
-              </Button>
-            </CardContent>
-          </Card>
-
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving || uploading}>
               <Save className="h-4 w-4 mr-2" />
@@ -583,6 +654,57 @@ export default function Settings() {
           <TabsContent value="users" className="space-y-6">
             <UserManagement />
           </TabsContent>
+
+          <TabsContent value="apis" className="space-y-6">
+            <ApiKeysManagement />
+          </TabsContent>
+
+          <TabsContent value="advanced" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciamento Avançado</CardTitle>
+                <CardDescription>Acesse configurações avançadas do sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/share-templates')}
+                >
+                  Templates de Compartilhamento
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/authorization-templates')}
+                >
+                  Templates de Autorização
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/print-templates')}
+                >
+                  Templates de Impressão
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/settings/company-public-page')}
+                >
+                  Página Pública da Empresa
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/settings/property-public-page')}
+                >
+                  Página Pública do Imóvel
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
       </div>
     </div>

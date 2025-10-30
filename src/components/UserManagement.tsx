@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, User, KeyRound, Edit, Copy, Archive, ArchiveRestore } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, KeyRound, Edit, Copy, Archive, ArchiveRestore, Home } from 'lucide-react';
 import { fetchCEP } from '@/lib/cepUtils';
 import { formatCPF, validateCPF } from '@/lib/validationUtils';
 import {
@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate
 
 interface UserProfile {
   id: string;
@@ -54,9 +55,15 @@ export default function UserManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [isUserPropertiesDialogOpen, setIsUserPropertiesDialogOpen] = useState(false);
+  const [selectedUserForProperties, setSelectedUserForProperties] = useState<{ id: string, name: string } | null>(null);
+  const [userProperties, setUserProperties] = useState<any[]>([]);
+  const [loadingUserProperties, setLoadingUserProperties] = useState(false);
+  const [filterArchived, setFilterArchived] = useState<'all' | 'active' | 'archived'>('active');
+  const navigate = useNavigate(); // Inicializar useNavigate
   const [newUser, setNewUser] = useState({
     email: '',
-    password: '',
+    password: 'senha123',
     fullName: '',
     companyId: undefined as string | undefined,
     role: 'user',
@@ -74,12 +81,20 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [filterArchived]); // Adicionar filterArchived como dependência
 
   const loadData = async () => {
     try {
+      let query = supabase.from('profiles').select('id, email, full_name, company_id, cpf_cnpj, archived, phone, creci, cep, street, number, complement, neighborhood, city, state, companies(name)');
+
+      if (filterArchived === 'active') {
+        query = query.eq('archived', false);
+      } else if (filterArchived === 'archived') {
+        query = query.eq('archived', true);
+      }
+
       const [usersData, companiesData, rolesData] = await Promise.all([
-        supabase.from('profiles').select('id, email, full_name, company_id, cpf_cnpj, archived, companies(name)'),
+        query, // Usar a query com filtro
         supabase.from('companies').select('id, name').order('name'),
         supabase.from('user_roles').select('user_id, role'),
       ]);
@@ -168,12 +183,13 @@ export default function UserManagement() {
 
       toast({
         title: 'Sucesso',
-        description: 'Usuário criado com sucesso!',
+        description: `Usuário criado com sucesso! Email: ${newUser.email} | Senha padrão: senha123`,
+        duration: 10000,
       });
 
       setNewUser({
         email: '',
-        password: '',
+        password: 'senha123',
         fullName: '',
         companyId: undefined,
         role: 'user',
@@ -230,20 +246,21 @@ export default function UserManagement() {
   const handleResetPassword = async (userEmail: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+        // Garantir que a URL de redirecionamento aponta para a página de reset de senha do frontend
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
 
       toast({
         title: 'Email enviado',
-        description: `Email de recuperação de senha enviado para ${userEmail}`,
+        description: `Um email de recuperação de senha foi enviado para ${userEmail}. Por favor, verifique sua caixa de entrada (e spam) e siga o link para redefinir sua senha.`,
       });
     } catch (error: any) {
       console.error('Error resetting password:', error);
       toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível enviar o email de recuperação.',
+        title: 'Erro ao resetar senha',
+        description: error.message || 'Não foi possível enviar o email de recuperação. Por favor, verifique as configurações do Supabase para redefinição de senha.',
         variant: 'destructive',
       });
     }
@@ -267,30 +284,63 @@ export default function UserManagement() {
     }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: editingUser.full_name,
-          company_id: editingUser.company_id,
-          phone: editingUser.phone,
-          creci: editingUser.creci,
-          cpf_cnpj: editingUser.cpf_cnpj,
-          cep: editingUser.cep,
-          street: editingUser.street,
-          number: editingUser.number,
-          complement: editingUser.complement,
-          neighborhood: editingUser.neighborhood,
-          city: editingUser.city,
-          state: editingUser.state,
-        })
-        .eq('id', editingUser.id);
+      // Verificar se o email foi alterado
+      const originalUser = users.find(u => u.id === editingUser.id);
+      const emailChanged = originalUser && originalUser.email !== editingUser.email;
 
-      if (error) throw error;
+      if (emailChanged) {
+        // Chamar Edge Function para atualizar o email no Auth
+        const { data: { session } } = await supabase.auth.getSession();
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/update-user-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ 
+            userId: editingUser.id,
+            newEmail: editingUser.email
+          }),
+        });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Dados do usuário atualizados!',
-      });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Erro ao atualizar email.');
+        }
+
+        toast({
+          title: 'Sucesso',
+          description: 'Email atualizado com sucesso! O usuário precisará fazer login novamente.',
+        });
+      } else {
+        // Se o email não mudou, apenas atualizar o perfil normalmente
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: editingUser.full_name,
+            company_id: editingUser.company_id,
+            phone: editingUser.phone,
+            creci: editingUser.creci,
+            cpf_cnpj: editingUser.cpf_cnpj,
+            cep: editingUser.cep,
+            street: editingUser.street,
+            number: editingUser.number,
+            complement: editingUser.complement,
+            neighborhood: editingUser.neighborhood,
+            city: editingUser.city,
+            state: editingUser.state,
+          })
+          .eq('id', editingUser.id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Sucesso',
+          description: 'Dados do usuário atualizados!',
+        });
+      }
 
       setIsEditDialogOpen(false);
       setEditingUser(null);
@@ -348,20 +398,38 @@ export default function UserManagement() {
         return;
       }
 
-      // Primeiro deletar roles
-      await supabase.from('user_roles').delete().eq('user_id', userId);
+      // Chamar a Edge Function para deletar o usuário do Auth e acionar exclusões em cascata
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       
-      // Depois deletar perfil
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      const response = await fetch(`${supabaseUrl}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
 
-      if (error) throw error;
+      console.log('Delete user Edge Function response status:', response.status);
+      console.log('Delete user Edge Function content-type:', response.headers.get('content-type'));
+
+      if (!response.ok) {
+        let errorMessage = 'Erro ao chamar a Edge Function de exclusão de usuário.';
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else if (response.status !== 204) { // Se não é 204 e não é JSON, tenta texto ou assume erro genérico
+          errorMessage = await response.text();
+          if (!errorMessage) errorMessage = 'Resposta inesperada da Edge Function.';
+        }
+        throw new Error(errorMessage);
+      }
 
       toast({
         title: 'Sucesso',
-        description: 'Usuário deletado com sucesso!',
+        description: 'Usuário deletado com sucesso do sistema de autenticação e perfis relacionados.',
       });
 
       loadData();
@@ -369,37 +437,115 @@ export default function UserManagement() {
       console.error('Error deleting user:', error);
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível deletar o usuário.',
+        description: error.message || 'Não foi possível deletar o usuário. Verifique se há dependências ou permissões.',
         variant: 'destructive',
       });
     }
   };
 
+  const handleViewUserProperties = async (user: UserProfile) => {
+    setSelectedUserForProperties({ id: user.id, name: user.full_name });
+    setIsUserPropertiesDialogOpen(true);
+    setLoadingUserProperties(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('id, code, title, purpose, property_type, status, city, state, sale_price, rental_price, archived, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setUserProperties(data || []);
+    } catch (error: any) {
+      console.error('Error fetching user properties:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível carregar os imóveis do usuário.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingUserProperties(false);
+    }
+  };
+
   const handleDuplicateUser = async (user: UserProfile) => {
     try {
-      const { data: profileData } = await supabase
+      // Buscar todos os dados do perfil
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
+      if (profileError) throw profileError;
       if (!profileData) throw new Error('Dados do usuário não encontrados');
 
-      const { error: authError } = await supabase.auth.signUp({
-        email: `copia_${Date.now()}_${profileData.email}`,
-        password: Math.random().toString(36).slice(-12),
-        options: {
-          data: {
-            full_name: `${profileData.full_name} (Cópia)`,
-          },
-        },
+      // Gerar novo email com timestamp
+      const timestamp = Date.now();
+      const emailParts = profileData.email.split('@');
+      const newEmail = `${emailParts[0]}_copia_${timestamp}@${emailParts[1]}`;
+
+      // Usar senha padrão
+      const defaultPassword = 'senha123';
+
+      // Criar novo usuário na autenticação
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newEmail,
+        password: defaultPassword,
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('Erro ao criar usuário');
+
+      // Aguardar um pouco para o trigger criar o perfil básico
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Atualizar o perfil criado automaticamente com os dados do usuário original
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: `${profileData.full_name} (Cópia)`,
+          company_id: profileData.company_id,
+          phone: profileData.phone,
+          creci: profileData.creci,
+          cpf_cnpj: null, // CPF/CNPJ não pode ser duplicado
+          cep: profileData.cep,
+          street: profileData.street,
+          number: profileData.number,
+          complement: profileData.complement,
+          neighborhood: profileData.neighborhood,
+          city: profileData.city,
+          state: profileData.state,
+          archived: false,
+        })
+        .eq('id', authData.user.id);
+
+      if (profileUpdateError) throw profileUpdateError;
+
+      // Buscar roles do usuário original
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      // Copiar roles para o novo usuário
+      if (rolesData && rolesData.length > 0) {
+        await supabase
+          .from('user_roles')
+          .insert(
+            rolesData.map(r => ({
+              user_id: authData.user.id,
+              role: r.role,
+            }))
+          );
+      }
 
       toast({
         title: 'Sucesso',
-        description: 'Usuário duplicado! Altere o email e senha do novo usuário.',
+        description: `Usuário duplicado! Email: ${newEmail} | Senha padrão: senha123`,
+        duration: 10000,
       });
 
       loadData();
@@ -416,7 +562,9 @@ export default function UserManagement() {
   const handleArchiveUser = async (userId: string) => {
     try {
       const user = users.find(u => u.id === userId);
-      const archived = (user as any)?.archived || false;
+      const archived = user?.archived || false;
+
+      console.log('Arquivando usuário:', { userId, currentArchived: archived, willBecomeArchived: !archived });
 
       // Verificar se o usuário tem imóveis ativos
       if (!archived) {
@@ -441,10 +589,13 @@ export default function UserManagement() {
         }
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({ archived: !archived })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
+
+      console.log('Resultado da atualização:', { data, error });
 
       if (error) throw error;
 
@@ -494,7 +645,21 @@ export default function UserManagement() {
             <CardTitle>Usuários</CardTitle>
             <CardDescription>Gerencie os usuários do sistema</CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <div className="flex items-center gap-2">
+            <Select
+              value={filterArchived}
+              onValueChange={(value: 'all' | 'active' | 'archived') => setFilterArchived(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filtrar Usuários" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Usuários Ativos</SelectItem>
+                <SelectItem value="archived">Usuários Arquivados</SelectItem>
+                <SelectItem value="all">Todos os Usuários</SelectItem>
+              </SelectContent>
+            </Select>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -527,8 +692,9 @@ export default function UserManagement() {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="senha123"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">Senha padrão: senha123 (pode ser alterada aqui se necessário)</p>
                   </div>
                 </div>
                 <div>
@@ -675,6 +841,7 @@ export default function UserManagement() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div> {/* Fecha a div que agrupa o Select e o Botão de Novo Usuário */}
         </div>
       </CardHeader>
       <CardContent>
@@ -687,26 +854,26 @@ export default function UserManagement() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
+                className="flex flex-col lg:flex-row lg:items-center lg:justify-between p-4 border rounded-lg gap-4"
               >
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     {userRoles[user.id] === 'admin' ? (
                       <Shield className="h-6 w-6 text-primary" />
                     ) : (
                       <User className="h-6 w-6 text-muted-foreground" />
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{user.full_name || 'Sem nome'}</h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{user.full_name || 'Sem nome'}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                     {user.companies && (
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
                         {user.companies.name}
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Badge variant={userRoles[user.id] === 'admin' ? 'default' : 'secondary'}>
                       {userRoles[user.id] === 'admin' ? 'Admin' : 'Usuário'}
                     </Badge>
@@ -717,63 +884,81 @@ export default function UserManagement() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={userRoles[user.id] || 'user'}
-                    onValueChange={(value) => handleUpdateRole(user.id, value)}
-                  >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">Usuário</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleEditUser(user)}
-                    title="Editar usuário"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleResetPassword(user.email)}
-                    title="Resetar senha"
-                  >
-                    <KeyRound className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleDuplicateUser(user)}
-                    title="Duplicar usuário"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleArchiveUser(user.id)}
-                    title={user.archived ? 'Desarquivar usuário' : 'Arquivar usuário'}
-                  >
-                    {user.archived ? (
-                      <ArchiveRestore className="h-4 w-4" />
-                    ) : (
-                      <Archive className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDeleteUser(user.id)}
-                    title="Deletar usuário"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+                  <div className="w-full sm:w-auto mb-2 sm:mb-0">
+                    <Select
+                      value={userRoles[user.id] || 'user'}
+                      onValueChange={(value) => handleUpdateRole(user.id, value)}
+                    >
+                      <SelectTrigger className="w-full sm:w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Usuário</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEditUser(user)}
+                      title="Editar usuário"
+                      className="flex-shrink-0"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleResetPassword(user.email)}
+                      title="Resetar senha"
+                      className="flex-shrink-0"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleDuplicateUser(user)}
+                      title="Duplicar usuário"
+                      className="flex-shrink-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleArchiveUser(user.id)}
+                      title={user.archived ? 'Desarquivar usuário' : 'Arquivar usuário'}
+                      className="flex-shrink-0"
+                    >
+                      {user.archived ? (
+                        <ArchiveRestore className="h-4 w-4" />
+                      ) : (
+                        <Archive className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleViewUserProperties(user)}
+                      title="Visualizar imóveis"
+                      className="flex-shrink-0"
+                    >
+                      <Home className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteUser(user.id)}
+                      title="Deletar usuário"
+                      className="flex-shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -793,15 +978,14 @@ export default function UserManagement() {
           {editingUser && (
             <div className="space-y-4 py-4">
               <div>
-                <Label htmlFor="edit_email">E-mail</Label>
+                <Label htmlFor="edit_email">E-mail *</Label>
                 <Input
                   id="edit_email"
                   type="email"
                   value={editingUser.email}
-                  disabled
-                  className="bg-muted"
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                 />
-                <p className="text-xs text-muted-foreground mt-1">O e-mail não pode ser alterado</p>
+                <p className="text-xs text-muted-foreground mt-1">Apenas administradores podem alterar o e-mail</p>
               </div>
               <div>
                 <Label htmlFor="edit_name">Nome Completo *</Label>
@@ -945,6 +1129,114 @@ export default function UserManagement() {
               Cancelar
             </Button>
             <Button onClick={handleUpdateUser}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para Visualizar Imóveis do Usuário */}
+      <Dialog open={isUserPropertiesDialogOpen} onOpenChange={setIsUserPropertiesDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Imóveis de {selectedUserForProperties?.name}</DialogTitle>
+            <DialogDescription>
+              Lista de imóveis associados a este usuário.
+            </DialogDescription>
+          </DialogHeader>
+          {loadingUserProperties ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Carregando imóveis...</p>
+              </div>
+            </div>
+          ) : userProperties.length === 0 ? (
+            <div className="text-center py-8">
+              <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Este usuário não possui imóveis cadastrados.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">
+                  Total de {userProperties.length} {userProperties.length === 1 ? 'imóvel' : 'imóveis'}
+                </p>
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Código</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Título</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Tipo</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Finalidade</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Cidade</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Preço</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">Status</th>
+                      <th className="px-4 py-2 text-center text-sm font-medium">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userProperties.map((property) => (
+                      <tr key={property.id} className="border-t hover:bg-muted/50">
+                        <td className="px-4 py-3 text-sm">{property.code}</td>
+                        <td className="px-4 py-3 text-sm font-medium">{property.title}</td>
+                        <td className="px-4 py-3 text-sm">{property.property_type || 'N/A'}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <Badge variant={property.purpose === 'venda' ? 'default' : property.purpose === 'venda_locacao' ? 'outline' : 'secondary'}>
+                            {property.purpose === 'venda' ? 'Venda' : property.purpose === 'locacao' ? 'Locação' : 'Venda/Locação'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{property.city || 'N/A'}, {property.state || ''}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {property.purpose === 'venda' || property.purpose === 'venda_locacao'
+                            ? (property.sale_price 
+                                ? new Intl.NumberFormat('pt-BR', { 
+                                    style: 'currency', 
+                                    currency: 'BRL' 
+                                  }).format(property.sale_price)
+                                : 'N/A')
+                            : (property.rental_price 
+                                ? new Intl.NumberFormat('pt-BR', { 
+                                    style: 'currency', 
+                                    currency: 'BRL' 
+                                  }).format(property.rental_price)
+                                : 'N/A')}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {property.archived ? (
+                            <Badge variant="outline" className="bg-muted">Arquivado</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              {property.status === 'disponivel' ? 'Disponível' : 
+                               property.status === 'reservado' ? 'Reservado' : 
+                               property.status === 'vendido' ? 'Vendido' : 
+                               property.status === 'alugado' ? 'Alugado' : 'Ativo'}
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setIsUserPropertiesDialogOpen(false);
+                              navigate(`/property/${property.id}`);
+                            }}
+                          >
+                            Ver Detalhes
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUserPropertiesDialogOpen(false)}>
+              Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

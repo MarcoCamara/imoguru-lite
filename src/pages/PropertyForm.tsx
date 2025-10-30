@@ -80,6 +80,7 @@ export default function PropertyForm() {
     captured_by: '',
     available_for_partnership: false,
     partnerships_notes: '',
+    youtube_url: '',
   });
 
   useEffect(() => {
@@ -322,18 +323,18 @@ export default function PropertyForm() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11 gap-2">
-              <TabsTrigger value="basic">Básico</TabsTrigger>
-              <TabsTrigger value="location">Localização</TabsTrigger>
-              <TabsTrigger value="features">Características</TabsTrigger>
-              <TabsTrigger value="values">Valores</TabsTrigger>
-              <TabsTrigger value="condominium">Condomínio</TabsTrigger>
-              <TabsTrigger value="nearby">Proximidades</TabsTrigger>
-              <TabsTrigger value="media">Mídia</TabsTrigger>
-              <TabsTrigger value="documents">Documentos</TabsTrigger>
-              <TabsTrigger value="owner">Proprietário</TabsTrigger>
-              <TabsTrigger value="partnership">Parceria</TabsTrigger>
-              <TabsTrigger value="statistics">Estatísticas</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-1 sm:gap-2 flex-wrap overflow-x-auto">
+              <TabsTrigger value="basic" className="text-xs sm:text-sm">Básico</TabsTrigger>
+              <TabsTrigger value="location" className="text-xs sm:text-sm">Localização</TabsTrigger>
+              <TabsTrigger value="features" className="text-xs sm:text-sm">Características</TabsTrigger>
+              <TabsTrigger value="values" className="text-xs sm:text-sm">Valores</TabsTrigger>
+              <TabsTrigger value="condominium" className="text-xs sm:text-sm">Condomínio</TabsTrigger>
+              <TabsTrigger value="nearby" className="text-xs sm:text-sm">Proximidades</TabsTrigger>
+              <TabsTrigger value="media" className="text-xs sm:text-sm">Mídia</TabsTrigger>
+              <TabsTrigger value="documents" className="text-xs sm:text-sm">Documentos</TabsTrigger>
+              <TabsTrigger value="owner" className="text-xs sm:text-sm">Proprietário</TabsTrigger>
+              <TabsTrigger value="partnership" className="text-xs sm:text-sm">Parceria</TabsTrigger>
+              <TabsTrigger value="statistics" className="text-xs sm:text-sm">Estatísticas</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic">
@@ -370,11 +371,13 @@ export default function PropertyForm() {
 
             <TabsContent value="media">
               <MediaForm 
-                propertyId={id} 
+                propertyId={id}
                 pendingImages={pendingImages}
                 setPendingImages={setPendingImages}
                 pendingVideos={pendingVideos}
                 setPendingVideos={setPendingVideos}
+                formData={formData}
+                setFormData={setFormData}
               />
             </TabsContent>
 
@@ -411,7 +414,7 @@ export default function PropertyForm() {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-6 flex flex-wrap justify-center sm:justify-end gap-2">
             <Button variant="outline" onClick={() => navigate('/dashboard')}>
               Cancelar
             </Button>

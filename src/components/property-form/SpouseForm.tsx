@@ -150,7 +150,7 @@ export default function SpouseForm({ spouseData, setSpouseData }: SpouseFormProp
           onChange={(e) => setSpouseData({ ...spouseData, state: e.target.value })}
           placeholder="UF"
           maxLength={2}
-          className="md:w-1/4"
+          className="w-full md:w-1/4"
         />
       </div>
     </div>

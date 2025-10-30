@@ -1,0 +1,3 @@
+ALTER TABLE public.print_templates
+ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+

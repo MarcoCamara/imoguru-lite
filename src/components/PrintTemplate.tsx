@@ -30,10 +30,28 @@ export default function PrintTemplate({ properties }: PrintTemplateProps) {
         .eq('is_default', true)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading print template:', error);
+        throw error;
+      }
+      
+      console.log('✅ Template carregado com sucesso:', data);
       setTemplate(data);
-    } catch (error) {
-      console.error('Error loading print template:', error);
+      
+      if (!data) {
+        toast({
+          title: 'Aviso',
+          description: 'Nenhum template de impressão padrão encontrado. Configure um template em Configurações.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao carregar template:', error);
+      toast({
+        title: 'Erro ao carregar template',
+        description: error?.message || 'Verifique se existe um template padrão configurado.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -79,16 +97,28 @@ export default function PrintTemplate({ properties }: PrintTemplateProps) {
     formatted = formatted.replace(/{{state}}/g, property.state || '');
     formatted = formatted.replace(/{{street}}/g, property.street || '');
     formatted = formatted.replace(/{{number}}/g, property.number || '');
+    formatted = formatted.replace(/{{neighborhood}}/g, property.neighborhood || '');
+    formatted = formatted.replace(/{{public_address}}/g, property.public_address || '');
     formatted = formatted.replace(/{{bedrooms}}/g, String(property.bedrooms || 0));
     formatted = formatted.replace(/{{bathrooms}}/g, String(property.bathrooms || 0));
     formatted = formatted.replace(/{{parking_spaces}}/g, String(property.parking_spaces || 0));
     formatted = formatted.replace(/{{total_area}}/g, property.total_area ? String(property.total_area) : 'N/A');
+    formatted = formatted.replace(/{{area_total}}/g, property.total_area ? String(property.total_area) : 'N/A');
     formatted = formatted.replace(/{{status}}/g, property.status || '');
     formatted = formatted.replace(/{{description}}/g, property.description || '');
     
-    const price = property.purpose === 'venda' 
-      ? (property.sale_price || 0).toLocaleString('pt-BR') 
-      : (property.rental_price || 0).toLocaleString('pt-BR');
+    // Replace prices
+    const salePrice = property.sale_price ? `R$ ${property.sale_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Não informado';
+    const rentalPrice = property.rental_price ? `R$ ${property.rental_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Não informado';
+    const condominiumFee = property.condominium_fee ? `R$ ${property.condominium_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Não informado';
+    const iptu = property.iptu ? `R$ ${property.iptu.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Não informado';
+    
+    formatted = formatted.replace(/{{sale_price}}/g, salePrice);
+    formatted = formatted.replace(/{{rental_price}}/g, rentalPrice);
+    formatted = formatted.replace(/{{condominium_fee}}/g, condominiumFee);
+    formatted = formatted.replace(/{{iptu}}/g, iptu);
+    
+    const price = property.purpose === 'venda' ? salePrice : rentalPrice;
     formatted = formatted.replace(/{{price}}/g, price);
 
     // Replace system settings
@@ -175,7 +205,7 @@ export default function PrintTemplate({ properties }: PrintTemplateProps) {
   return (
     <Button onClick={handlePrint} variant="outline" size="sm">
       <Printer className="h-4 w-4 mr-2" />
-      Imprimir Selecionados
+      Imprimir ({properties.length})
     </Button>
   );
 }

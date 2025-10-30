@@ -16,6 +16,9 @@ import PropertyAuthorizations from "./pages/PropertyAuthorizations";
 import PrintTemplates from "./pages/PrintTemplates";
 import PublicPropertyView from "./pages/PublicPropertyView";
 import NotFound from "./pages/NotFound";
+import PublicCompanyPage from "./pages/PublicCompanyPage"; // Importar o novo componente
+import CompanyPublicPageSettings from "./pages/CompanyPublicPageSettings";
+import PropertyPublicPageSettings from "./pages/PropertyPublicPageSettings";
 
 const queryClient = new QueryClient();
 
@@ -34,11 +37,16 @@ const App = () => (
           <Route path="/property/:id" element={<ProtectedRoute><PropertyForm /></ProtectedRoute>} />
           <Route path="/property/:id/authorizations" element={<ProtectedRoute><PropertyAuthorizations /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/settings/company-public-page" element={<ProtectedRoute><CompanyPublicPageSettings /></ProtectedRoute>} />
+          <Route path="/settings/property-public-page" element={<ProtectedRoute><PropertyPublicPageSettings /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/share-templates" element={<ProtectedRoute><ShareTemplates /></ProtectedRoute>} />
           <Route path="/authorization-templates" element={<ProtectedRoute><AuthorizationTemplates /></ProtectedRoute>} />
           <Route path="/print-templates" element={<ProtectedRoute><PrintTemplates /></ProtectedRoute>} />
           <Route path="/imovel/:id" element={<PublicPropertyView />} />
+          <Route path="/public-company/:companySlug" element={<PublicCompanyPage />} />
+          <Route path="/public-property/:companySlug" element={<PublicCompanyPage />} />
+          <Route path="/public-property/:companySlug/property/:propertyId" element={<PublicPropertyView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

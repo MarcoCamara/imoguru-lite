@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Bed, Bath, Car, Ruler, MapPin, Edit, Share2, Trash2, Archive, Copy } from 'lucide-react';
+import { Bed, Bath, Car, Ruler, MapPin, Edit, Share2, Trash2, Archive, Copy, Star } from 'lucide-react';
 
 interface PropertyCardProps {
   property: any;
@@ -13,6 +13,7 @@ interface PropertyCardProps {
   onDelete: () => void;
   onArchive: () => void;
   onDuplicate?: () => void;
+  onToggleFeature: (id: string, isFeatured: boolean) => void;
 }
 
 export default function PropertyCard({
@@ -24,6 +25,7 @@ export default function PropertyCard({
   onDelete,
   onArchive,
   onDuplicate,
+  onToggleFeature,
 }: PropertyCardProps) {
   const coverImage = property.property_images?.find((img: any) => img.is_cover)?.url ||
     property.property_images?.[0]?.url;
@@ -79,6 +81,15 @@ export default function PropertyCard({
           {property.archived && (
             <Badge variant="destructive">Arquivado</Badge>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onToggleFeature(property.id, !property.is_featured)}
+            title={property.is_featured ? "Remover de Destaques" : "Marcar como Destaque"}
+            className={property.is_featured ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}
+          >
+            <Star className={`h-4 w-4 fill-current ${property.is_featured ? 'text-yellow-500' : 'text-gray-400'}`} />
+          </Button>
         </div>
       </div>
 

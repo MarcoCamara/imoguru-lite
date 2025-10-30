@@ -1,0 +1,11 @@
+{
+  "main": "./index.ts",
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "target": "esnext"
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --watch index.ts"
+  },
+  "importMap": "./import_map.json"
+}

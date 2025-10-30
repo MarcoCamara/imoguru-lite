@@ -14,7 +14,7 @@ interface BasicInfoFormProps {
 
 export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormProps) {
   return (
-    <div className="space-y-4 pt-4">
+    <div className="space-y-4 sm:space-y-6 pt-4">
       <div>
         <Label htmlFor="title">Título do Anúncio *</Label>
         <Input
@@ -22,10 +22,11 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           placeholder="Ex: Apartamento 3 quartos no Centro"
+          className="w-full"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="code">Código do Imóvel</Label>
           <Input
@@ -33,7 +34,7 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
             value={formData.code}
             disabled
             placeholder="Gerado automaticamente ao salvar"
-            className="bg-muted"
+            className="bg-muted w-full"
           />
         </div>
 
@@ -44,18 +45,19 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
             value={formData.registration_number || ''}
             onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
             placeholder="Número da matrícula"
+            className="w-full"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="purpose">Finalidade *</Label>
           <Select
             value={formData.purpose}
             onValueChange={(value) => setFormData({ ...formData, purpose: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -72,7 +74,7 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
             value={formData.property_type}
             onValueChange={(value) => setFormData({ ...formData, property_type: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
@@ -106,7 +108,7 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
             value={formData.condition}
             onValueChange={(value) => setFormData({ ...formData, condition: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -119,14 +121,14 @@ export default function BasicInfoForm({ formData, setFormData }: BasicInfoFormPr
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="status">Status</Label>
           <Select
             value={formData.status}
             onValueChange={(value) => setFormData({ ...formData, status: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

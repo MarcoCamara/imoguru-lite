@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet, Settings, User, LayoutGrid, List } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Building2, Plus, LogOut, Filter, Share2, FileSpreadsheet, Settings, User, LayoutGrid, List, Globe, MessageSquareMore, Sparkles, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PropertyFilters from '@/components/PropertyFilters';
 import PropertyCard from '@/components/PropertyCard';
 import DashboardMetrics from '@/components/DashboardMetrics';
-import PrintTemplate from '@/components/PrintTemplate';
+import { usePrint } from '@/hooks/usePrint';
 import { exportToCSV, exportToXLSX, exportToJSON } from '@/lib/exportUtils';
 import {
   DropdownMenu,
@@ -18,11 +18,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from '@/components/ShareDialog';
+import ContactRequestsManager from '@/components/ContactRequestsManager'; // Importar o novo componente
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Importar Dialog
+import { formatDistanceToNow, parseISO, setDefaultOptions } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Toggle } from '@/components/ui/toggle'; // Importar Toggle
+
+setDefaultOptions({ locale: ptBR });
 
 export default function Dashboard() {
   const { user, signOut, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { printProperties } = usePrint();
   const [properties, setProperties] = useState<any[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<any[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
@@ -31,6 +39,15 @@ export default function Dashboard() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [propertyToShare, setPropertyToShare] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [companies, setCompanies] = useState<any[]>([]); // Novo estado para lista de empresas
+  const [selectedPublicCompanyId, setSelectedPublicCompanyId] = useState<string | null>(null); // Novo estado para empresa pública selecionada
+  const [showContactRequestsDialog, setShowContactRequestsDialog] = useState(false); // Novo estado para o diálogo de solicitações de contato
+  const [averageResponseTime, setAverageResponseTime] = useState<string | null>(null); // Novo estado para tempo médio de atendimento
+  const location = useLocation(); // Inicializar useLocation
+  const queryParams = new URLSearchParams(location.search);
+  const userIdFromUrl = queryParams.get('userId'); // Obter userId da URL
+  const [userCompany, setUserCompany] = useState<any>(null); // Novo estado para a empresa do usuário logado
+  const [aiAgentEnabled, setAiAgentEnabled] = useState(false); // Novo estado para o status do agente de IA
   const [systemSettings, setSystemSettings] = useState<any>({
     app_name: 'ImoGuru',
     logo_url: null,
@@ -39,6 +56,8 @@ export default function Dashboard() {
     logo_size_desktop: 56,
     show_dashboard_metrics: true,
     show_dashboard_charts: true,
+    font_family: 'Arial', // Novo campo
+    font_size: 24, // Novo campo
   });
 
   useEffect(() => {
@@ -51,6 +70,10 @@ export default function Dashboard() {
     if (user) {
       fetchProperties();
       fetchSystemSettings();
+      fetchCompanies(); // Buscar empresas para todos os usuários
+      if (isAdmin) {
+        fetchAverageResponseTime(); // Buscar tempo médio de atendimento
+      }
 
       // Setup realtime subscription for properties table
       const channel = supabase
@@ -74,25 +97,27 @@ export default function Dashboard() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, userIdFromUrl]); // Adicionar userIdFromUrl como dependência
 
   const fetchSystemSettings = async () => {
     try {
       const { data, error } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop', 'show_dashboard_metrics', 'show_dashboard_charts']);
+        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop', 'show_dashboard_metrics', 'show_dashboard_charts', 'font_family', 'font_size']); // Incluir novos campos
 
       if (error) throw error;
 
-      const settingsObj: any = { 
-        app_name: 'ImoGuru', 
+      const settingsObj: any = {
+        app_name: 'ImoGuru',
         logo_url: null,
         logo_size_mobile: 40,
         logo_size_tablet: 48,
         logo_size_desktop: 56,
         show_dashboard_metrics: true,
         show_dashboard_charts: true,
+        font_family: 'Arial', // Default para novos campos
+        font_size: 24, // Default para novos campos
       };
       data?.forEach((item) => {
         settingsObj[item.setting_key] = item.setting_value;
@@ -101,6 +126,145 @@ export default function Dashboard() {
       setSystemSettings(settingsObj);
     } catch (error) {
       console.error('Error loading system settings:', error);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, slug, ai_agent_enabled')
+        .order('name');
+      if (error) throw error;
+      setCompanies(data || []);
+
+      // Buscar a empresa do usuário através da tabela profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user?.id)
+        .single();
+      
+      if (!profileError && profileData?.company_id) {
+        const currentUserCompany = data?.find((company: any) => company.id === profileData.company_id);
+        if (currentUserCompany) {
+          setUserCompany(currentUserCompany);
+          setAiAgentEnabled(currentUserCompany.ai_agent_enabled);
+        }
+      }
+      
+      // Se for admin e tiver apenas uma empresa, ou se não houver seleção prévia, seleciona a primeira
+      if (isAdmin && data && data.length > 0 && !selectedPublicCompanyId) {
+        setSelectedPublicCompanyId(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading companies for public view:', error);
+    }
+  };
+
+  const fetchAverageResponseTime = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('public_contact_requests')
+        .select('created_at, responded_at')
+        .not('responded_at', 'is', null);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        let totalResponseTimeMillis = 0;
+        data.forEach(request => {
+          const created = parseISO(request.created_at);
+          const responded = parseISO(request.responded_at);
+          totalResponseTimeMillis += Math.abs(responded.getTime() - created.getTime());
+        });
+
+        const averageMillis = totalResponseTimeMillis / data.length;
+        const averageMinutes = Math.floor(averageMillis / (1000 * 60));
+        
+        if (averageMinutes < 60) {
+          setAverageResponseTime(`${averageMinutes} min`);
+        } else if (averageMinutes < (24 * 60)) {
+          const hours = Math.floor(averageMinutes / 60);
+          const minutes = averageMinutes % 60;
+          setAverageResponseTime(`${hours} h ${minutes} min`);
+        } else {
+          const days = Math.floor(averageMinutes / (24 * 60));
+          const hours = Math.floor((averageMinutes % (24 * 60)) / 60);
+          setAverageResponseTime(`${days} d ${hours} h`);
+        }
+      } else {
+        setAverageResponseTime('N/A');
+      }
+    } catch (error) {
+      console.error('Error fetching average response time:', error);
+      setAverageResponseTime('Erro');
+    }
+  };
+
+  const handleToggleFeature = async (propertyId: string, isFeatured: boolean) => {
+    try {
+      const propertyToFeature = properties.find(p => p.id === propertyId);
+      if (!propertyToFeature) {
+        throw new Error("Imóvel não encontrado.");
+      }
+
+      if (isFeatured) {
+        // Desmarcar qualquer outro imóvel em destaque da mesma empresa
+        const { error: unf_error } = await supabase
+          .from('properties')
+          .update({ is_featured: false })
+          .eq('company_id', propertyToFeature.company_id)
+          .eq('is_featured', true);
+        
+        if (unf_error) throw unf_error;
+      }
+
+      // Atualizar o status do imóvel alvo
+      const { error } = await supabase
+        .from('properties')
+        .update({ is_featured: isFeatured })
+        .eq('id', propertyId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: isFeatured ? 'Imóvel marcado como destaque!' : 'Imóvel removido dos destaques.',
+      });
+      fetchProperties(); // Recarregar propriedades para refletir a mudança
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao alterar destaque',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleAiAgent = async () => {
+    if (!userCompany) return;
+
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ ai_agent_enabled: !aiAgentEnabled })
+        .eq('id', userCompany.id);
+
+      if (error) throw error;
+
+      setAiAgentEnabled(prev => !prev); // Atualiza o estado local
+      toast({
+        title: 'Sucesso',
+        description: !aiAgentEnabled ? 'Agente de IA ativado para sua empresa!' : 'Agente de IA desativado para sua empresa.',
+      });
+    } catch (error: any) {
+      console.error('Error toggling AI agent status:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível alternar o status do agente de IA.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -124,6 +288,10 @@ export default function Dashboard() {
 
       if (!isAdmin) {
         query = query.eq('user_id', user?.id);
+      }
+      // Se userIdFromUrl existe, filtrar por ele
+      if (userIdFromUrl) {
+        query = query.eq('user_id', userIdFromUrl);
       }
 
       const { data, error } = await query;
@@ -195,17 +363,22 @@ export default function Dashboard() {
       });
       return;
     }
+    
+    // Antiga lógica de compartilhamento único removida para permitir múltiplos
+    // if (propertiesToShare.length === 1) {
+    //   setPropertyToShare(propertiesToShare[0]);
+    //   setShareDialogOpen(true);
+    // } else {
+    //   toast({
+    //     title: 'Compartilhamento múltiplo',
+    //     description: 'Selecione apenas um imóvel por vez para compartilhar',
+    //     variant: 'destructive',
+    //   });
+    // }
 
-    if (propertiesToShare.length === 1) {
-      setPropertyToShare(propertiesToShare[0]);
-      setShareDialogOpen(true);
-    } else {
-      toast({
-        title: 'Compartilhamento múltiplo',
-        description: 'Selecione apenas um imóvel por vez para compartilhar',
-        variant: 'destructive',
-      });
-    }
+    // Nova lógica para compartilhar múltiplos imóveis
+    setPropertyToShare(propertiesToShare); // Define propertyToShare como o array de imóveis
+    setShareDialogOpen(true);
   };
 
   const handleSelectProperty = (propertyId: string) => {
@@ -383,29 +556,82 @@ export default function Dashboard() {
               ) : (
                 <Building2 className="h-12 w-12 text-primary flex-shrink-0 hidden lg:block" />
               )}
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground"
+                  style={{ fontFamily: systemSettings.font_family, fontSize: `${systemSettings.font_size}px` }}>
                 {systemSettings.app_name}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 md:gap-2">
               {isAdmin && (
                 <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mr-2">
                   Administrador
                 </div>
               )}
+              {/* Toggle para Agente de IA */}
+              {userCompany && (
+                <Toggle
+                  pressed={aiAgentEnabled}
+                  onPressedChange={handleToggleAiAgent}
+                  aria-label="Toggle Agente de IA"
+                  className="ml-2"
+                  title={aiAgentEnabled ? "Agente de IA Ativo" : "Agente de IA Inativo"}
+                >
+                  <Sparkles className={`h-4 w-4 ${aiAgentEnabled ? 'text-yellow-500' : 'text-gray-400'}`} />
+                </Toggle>
+              )}
+              {/* Botão/Dropdown para Página Pública */}
+              {isAdmin ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" title="Página Pública">
+                      <Globe className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {companies.map((company) => (
+                      <DropdownMenuItem 
+                        key={company.id} 
+                        onClick={() => navigate(`/public-property/${company.slug}`)}
+                      >
+                        {company.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (userCompany && (
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => navigate(`/public-property/${userCompany.slug}`)}
+                  title="Página Pública"
+                >
+                  <Globe className="h-4 w-4" />
+                </Button>
+              ))}
+
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={() => setShowFilters(!showFilters)}
+                title="Filtros"
               >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
+                <Filter className="h-4 w-4" />
               </Button>
+              {selectedProperties.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShareMultiple}
+                  title="Compartilhar imóveis selecionados"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Compartilhar ({selectedProperties.length})
+                </Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    Exportar
+                  <Button variant="outline" size="icon" title="Exportar">
+                    <FileSpreadsheet className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -421,9 +647,17 @@ export default function Dashboard() {
                 </DropdownMenuContent>
               </DropdownMenu>
               {selectedProperties.length > 0 && (
-                <PrintTemplate 
-                  properties={properties.filter(p => selectedProperties.includes(p.id))} 
-                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const propertiesToPrint = properties.filter(p => selectedProperties.includes(p.id));
+                    printProperties({ properties: propertiesToPrint, showFullAddress: true });
+                  }}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir ({selectedProperties.length})
+                </Button>
               )}
               <Button
                 onClick={() => navigate('/property/new')}
@@ -439,6 +673,14 @@ export default function Dashboard() {
                 title="Meu Perfil"
               >
                 <User className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowContactRequestsDialog(true)}
+                title="Solicitações de Contato"
+              >
+                <MessageSquareMore className="h-4 w-4" />
               </Button>
               {isAdmin && (
                 <Button
@@ -464,7 +706,12 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {systemSettings.show_dashboard_metrics && <DashboardMetrics showCharts={systemSettings.show_dashboard_charts} />}
+        {systemSettings.show_dashboard_metrics && (
+          <DashboardMetrics 
+            showCharts={systemSettings.show_dashboard_charts} 
+            averageResponseTime={isAdmin ? averageResponseTime : null}
+          />
+        )}
         
         {showFilters && (
           <Card className="mb-6 p-6">
@@ -498,7 +745,7 @@ export default function Dashboard() {
           </Card>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between mb-6 gap-y-4">
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold text-foreground">
                   {filteredProperties.length} imóve{filteredProperties.length === 1 ? 'l' : 'is'} encontrado{filteredProperties.length === 1 ? '' : 's'}
@@ -566,6 +813,7 @@ export default function Dashboard() {
                     onDelete={() => handleDelete(property.id)}
                     onArchive={() => handleArchive(property.id)}
                     onDuplicate={() => handleDuplicate(property)}
+                    onToggleFeature={handleToggleFeature} // Passa a nova função
                   />
                 ))}
               </div>
@@ -580,23 +828,23 @@ export default function Dashboard() {
 
                   return (
                     <Card key={property.id} className="hover:shadow-lg transition-shadow">
-                      <div className="flex items-center gap-4 p-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 w-full">
                         <input
                           type="checkbox"
                           checked={selectedProperties.includes(property.id)}
                           onChange={() => handleSelectProperty(property.id)}
-                          className="h-5 w-5 cursor-pointer"
+                          className="h-5 w-5 cursor-pointer flex-shrink-0 mt-1 sm:mt-0"
                         />
                         
                         {coverImage && (
                           <img
                             src={coverImage}
                             alt={property.title}
-                            className="h-20 w-28 object-cover rounded"
+                            className="h-20 w-28 object-cover rounded flex-shrink-0"
                           />
                         )}
 
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 w-full sm:w-auto">
                           <h3 className="font-semibold text-lg truncate">{property.title}</h3>
                           <p className="text-sm text-muted-foreground">
                             {property.code} • {property.city}, {property.state}
@@ -607,7 +855,7 @@ export default function Dashboard() {
                           </p>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col items-end gap-2 mt-2 sm:mt-0 sm:ml-auto w-full sm:w-auto">
                           <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
                             {purposeText}
                           </span>
@@ -618,7 +866,7 @@ export default function Dashboard() {
                           )}
                         </div>
 
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 mt-2 sm:mt-0 sm:ml-2 flex-shrink-0">
                           <Button
                             variant="outline"
                             size="icon"
@@ -649,8 +897,13 @@ export default function Dashboard() {
       <ShareDialog
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
-        property={propertyToShare}
+        properties={Array.isArray(propertyToShare) ? propertyToShare : (propertyToShare ? [propertyToShare] : [])}
       />
+      <Dialog open={showContactRequestsDialog} onOpenChange={setShowContactRequestsDialog}>
+        <DialogContent className="max-w-7xl w-[95vw]">
+          <ContactRequestsManager />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

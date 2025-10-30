@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Instalação - ImoGuru</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f9f9f9; }
+        h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h1 { font-size: 2.2em; }
+        h2 { font-size: 1.8em; }
+        h3 { font-size: 1.4em; border-bottom-style: dashed; border-bottom-width: 1px; }
+        code { background-color: #e8e8e8; padding: 3px 6px; border-radius: 4px; font-family: "Courier New", Courier, monospace; }
+        pre { background-color: #2c3e50; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .command { color: #50fa7b; }
+        .comment { color: #6272a4; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #3498db; color: white; }
+        .note { background-color: #fffbe6; border-left: 5px solid #f1c40f; padding: 15px; margin: 20px 0; }
+        .success { background-color: #e8f5e9; border-left: 5px solid #4caf50; padding: 15px; margin: 20px 0; }
+        ol li { margin-bottom: 10px; }
+        strong { color: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <h1>Guia de Instalação (Deploy) na Hostinger VPS com EasyPanel</h1>
+    <p>Olá! Este é um guia completo para instalar e colocar seu sistema para funcionar em um ambiente de produção. Siga cada passo com atenção.</p>
+
+    <div class="note">
+        <strong>Visão Geral da Estratégia:</strong><br>
+        Vamos usar o script <code>setup.sh</code> para automatizar a preparação, o <strong>Docker</strong> para empacotar a aplicação e o <strong>EasyPanel</strong> na sua VPS para publicar. Usaremos seu projeto Supabase <strong>já existente na nuvem</strong> como nosso banco de dados de produção.
+    </div>
+
+    <h2>Fase 1: Preparar o Ambiente e Executar o Automatizador</h2>
+
+    <h3>Passo 1.1: Preparar os Arquivos</h3>
+    <ol>
+        <li>Verifique se o arquivo <code>deploy.env</code> está na raiz do projeto e com todas as suas chaves e segredos preenchidos.</li>
+        <li>Verifique se o script <code>setup.sh</code> está na raiz do projeto.</li>
+    </ol>
+    
+    <h3>Passo 1.2: Executar o Script Automatizador</h3>
+    <ol>
+        <li>Abra um terminal na raiz do seu projeto local.
+            <div class="note">
+                <strong>Importante (Usuários Windows):</strong> Não use o PowerShell ou CMD padrão. Você <strong>precisa</strong> usar o <strong>Git Bash</strong>. Para abri-lo, vá para a pasta do projeto, clique com o botão direito em um espaço vazio e selecione "<strong>Git Bash Here</strong>".
+            </div>
+        </li>
+        <li>Dentro do terminal correto (Git Bash no Windows), torne o script executável com o comando:
+            <pre><code class="command">chmod +x setup.sh</code></pre>
+        </li>
+        <li>Execute o script:
+            <pre><code class="command">./setup.sh</code></pre>
+        </li>
+        <li>O script irá apresentar um menu. Escolha a <strong>opção 1</strong> para "Preparar para um novo DEPLOY".</li>
+        <li>Siga as instruções do script. Ele irá:
+            <ul>
+                <li>Confirmar o ID do seu projeto Supabase.</li>
+                <li>Conectar seu ambiente local ao projeto de produção.</li>
+                <li>Perguntar se você deseja enviar a estrutura do banco de dados (schema) para a nuvem. Diga <strong>sim (s)</strong>.</li>
+                <li>Pedir a URL do seu domínio principal (se tiver, senão deixe em branco).</li>
+            </ul>
+        </li>
+        <li>Ao final, o script irá gerar um <strong>bloco de texto</strong> com todas as variáveis de ambiente. <strong>Copie este bloco inteiro</strong>, pois você o usará no EasyPanel.</li>
+    </ol>
+
+    <h2>Fase 2: Empacotar e Enviar o Projeto para a VPS</h2>
+
+    <h3>Passo 2.1: Compactar o Projeto</h3>
+    <ol>
+        <li>Na sua máquina local, vá para a pasta principal do projeto (<code>rose-realstate</code>).</li>
+        <li>Selecione <strong>todos os arquivos e pastas</strong>.</li>
+        <li>Clique com o botão direito e escolha "<strong>Compactar para arquivo ZIP</strong>" (ou "Enviar para -> Pasta compactada").</li>
+        <li>Nomeie o arquivo como <code>imoguru-deploy.zip</code>.</li>
+    </ol>
+
+    <h3>Passo 2.2: Fazer Upload para a VPS via EasyPanel</h3>
+    <ol>
+        <li>Acesse seu <strong>EasyPanel</strong>.</li>
+        <li>Vá para a seção de <strong>Projetos</strong> e clique em "<strong>New</strong>".</li>
+        <li>Selecione a opção "<strong>Upload a file</strong>".</li>
+        <li>Envie o arquivo <code>imoguru-deploy.zip</code> que você acabou de criar. O EasyPanel irá descompactar e detectar o arquivo <code>docker-compose.yml</code>.</li>
+    </ol>
+
+    <h2>Fase 3: Configuração e Deploy no EasyPanel</h2>
+
+    <h3>Passo 3.1: Configurar Variáveis de Ambiente</h3>
+    <ol>
+        <li>No seu projeto recém-criado no EasyPanel, encontre a aba ou seção "<strong>Environment Variables</strong>".</li>
+        <li><strong>Cole o bloco de texto inteiro</strong> que você copiou do script <code>setup.sh</code>. Ele deve preencher todas as variáveis automaticamente.</li>
+        <li>
+            <div class="note">
+                <strong>Atenção:</strong> Se você deixou o domínio em branco no script, a variável <code>CORS_ORIGIN</code> foi preenchida automaticamente com <code>https://imoguru-lite-imoguru-frontend.9m3hab.easypanel.host</code>. Se o seu domínio final for outro, <strong>troque este valor</strong>.
+            </div>
+        </li>
+        <li>Salve as variáveis.</li>
+    </ol>
+
+    <h3>Passo 3.2: Fazer o Deploy</h3>
+    <ol>
+        <li>Procure pelo botão "<strong>Deploy</strong>" no EasyPanel e clique nele.</li>
+        <li>Acompanhe o processo na aba "<strong>Logs</strong>". Se tudo der certo, você verá mensagens indicando que os servidores iniciaram nas portas <code>8085</code> (frontend) e <code>3001</code> (backend).</li>
+    </ol>
+
+    <h2>Fase 4: Configuração Final</h2>
+
+    <h3>Passo 4.1: Apontar seu Domínio</h3>
+    <ol>
+        <li>No EasyPanel, vá para a aba "<strong>Domains</strong>" do seu projeto e adicione seu domínio principal (ex: <code>https://app.seudominio.com</code>). O EasyPanel cuidará do SSL (HTTPS).</li>
+        <li>No painel do seu provedor de domínio (Hostinger, GoDaddy), crie um <strong>Registro A</strong> que aponte seu domínio para o <strong>endereço IP da sua VPS</strong>.</li>
+    </ol>
+    
+    <h3>Passo 4.2: Criar o Primeiro Usuário Administrador</h3>
+    <ol>
+        <li>Após o deploy, acesse a URL do seu backend: <code>http://&lt;seu-dominio-ou-ip-da-vps&gt;:3001/bootstrap-admin</code></li>
+        <li>Preencha os dados e o <strong>Bootstrap Secret</strong> que está no seu arquivo <code>deploy.env</code>.</li>
+    </ol>
+    
+    <h3>Passo 4.3: Atualizar Domínios das Empresas (no Futuro)</h3>
+    <p>Quando precisar configurar ou alterar o domínio de uma página pública de empresa:</p>
+    <ol>
+        <li>Execute o script <code>./setup.sh</code> novamente.</li>
+        <li>Escolha a <strong>opção 2</strong> para "Atualizar o DOMÍNIO".</li>
+        <li>Siga as instruções para gerar o comando SQL.</li>
+        <li>Execute o comando gerado no <strong>Editor SQL</strong> dentro do seu painel Supabase.</li>
+    </ol>
+
+    <div class="success">
+        <strong>Pronto!</strong> Seu sistema estará instalado, configurado e rodando em produção.
+    </div>
+
+    <h2>Opções de Deploy: Prós e Contras</h2>
+    <table>
+        <tr>
+            <th>Opção</th>
+            <th>Prós</th>
+            <th>Contras</th>
+        </tr>
+        <tr>
+            <td>Docker Image (Frontend)</td>
+            <td>Build reproduzível; redeploy rápido; independe do builder do painel</td>
+            <td>Requer registry e push a cada mudança</td>
+        </tr>
+        <tr>
+            <td>Dockerfile (Frontend)</td>
+            <td>Build direto no EasyPanel; sem push de imagem</td>
+            <td>Build mais lento no servidor; precisa setar Build Args</td>
+        </tr>
+        <tr>
+            <td>Upload estático (Frontend)</td>
+            <td>Simplíssimo; barato; sem runtime Node</td>
+            <td>Qualquer alteração exige novo build e upload</td>
+        </tr>
+        <tr>
+            <td>docker-compose (Full Stack)</td>
+            <td>Sobe front/back juntos com um comando</td>
+            <td>Orquestração manual e via CLI</td>
+        </tr>
+    </table>
+
+    <h2>Como Configurar cada App no EasyPanel</h2>
+    <h3>Frontend — Docker Image</h3>
+    <ul>
+        <li>Tipo: Docker Image</li>
+        <li>Imagem: <code>marcocamara2025/imoguru-frontend:v1.0.50</code></li>
+        <li>Porta: <code>8085</code></li>
+        <li>Health Check: GET <code>/</code> na porta <code>8085</code></li>
+    </ul>
+    <h3>Frontend — Dockerfile</h3>
+    <ul>
+        <li>Build Args:
+            <ul>
+                <li><code>VITE_SUPABASE_URL = https://jjeyaupzjkyuidrxdvso.supabase.co</code></li>
+                <li><code>VITE_SUPABASE_PUBLISHABLE_KEY = sb_publishable_C677OuylmWQm5SdGO0UqBw_dmMmQIBi</code></li>
+            </ul>
+        </li>
+        <li>Porta: <code>8085</code>; Health Check igual ao acima</li>
+    </ul>
+    <h3>Frontend — Upload estático</h3>
+    <ul>
+        <li>Origem: diretório <code>dist/</code> após <code>npm run build</code></li>
+        <li>Adicione domínio e habilite HTTPS</li>
+    </ul>
+    <h3>Backend — Dockerfile ou Docker Image</h3>
+    <ul>
+        <li>Porta: <code>3001</code></li>
+        <li>Env obrigatórias: <code>DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, JWT_SECRET, BOOTSTRAP_SECRET, CORS_ORIGIN</code></li>
+        <li>Health Check: GET <code>/health</code> na porta <code>3001</code></li>
+    </ul>
+
+</body>
+</html>

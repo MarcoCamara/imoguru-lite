@@ -45,6 +45,9 @@ export function FormatSelector({ width, height, onChange }: FormatSelectorProps)
   const handlePresetChange = (value: string) => {
     if (value === 'custom') return;
     
+    // Verificar se é um header (categoria)
+    if (value.startsWith('header-')) return;
+    
     const format = predefinedFormats.find(
       f => `${f.width}x${f.height}` === value
     );
@@ -55,6 +58,11 @@ export function FormatSelector({ width, height, onChange }: FormatSelectorProps)
   };
 
   const categories = Array.from(new Set(predefinedFormats.map(f => f.category)));
+  
+  // Encontrar o formato atual ou marcar como personalizado
+  const currentValue = predefinedFormats.find(f => f.width === width && f.height === height) 
+    ? `${width}x${height}` 
+    : 'custom';
 
   return (
     <Card>
@@ -62,27 +70,45 @@ export function FormatSelector({ width, height, onChange }: FormatSelectorProps)
         <div>
           <Label>Formato do Material</Label>
           <Select
-            value={`${width}x${height}`}
+            value={currentValue}
             onValueChange={handlePresetChange}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione um formato" />
+              <SelectValue placeholder="Selecione um formato">
+                {currentValue === 'custom' 
+                  ? `Personalizado (${width}x${height}px)` 
+                  : predefinedFormats.find(f => `${f.width}x${f.height}` === currentValue)?.label
+                }
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="custom">Personalizado</SelectItem>
-              {categories.map(category => (
-                <optgroup key={category} label={category}>
+            <SelectContent className="max-h-[400px]">
+              <SelectItem value="custom">
+                📐 Personalizado {currentValue === 'custom' ? `(${width}x${height}px)` : ''}
+              </SelectItem>
+              {categories.map((category, catIndex) => (
+                <div key={`category-group-${category}`}>
+                  {catIndex > 0 && <div className="h-px bg-border my-1" />}
+                  <div className="px-2 py-1.5 text-xs font-semibold text-primary bg-muted/30 select-none">
+                    {category === 'Instagram' && '📷 '}
+                    {category === 'Facebook' && '👍 '}
+                    {category === 'WhatsApp' && '💬 '}
+                    {category === 'Email' && '📧 '}
+                    {category === 'Impressão' && '🖨️ '}
+                    {category}
+                  </div>
                   {predefinedFormats
                     .filter(f => f.category === category)
-                    .map(format => (
+                    .map((format, formatIndex) => (
                       <SelectItem
-                        key={`${format.width}x${format.height}`}
+                        key={`${category}-${formatIndex}-${format.width}x${format.height}`}
                         value={`${format.width}x${format.height}`}
+                        className="pl-6"
                       >
-                        {format.label} ({format.width}x{format.height}px)
+                        {format.label} <span className="text-muted-foreground text-xs">({format.width}×{format.height}px)</span>
                       </SelectItem>
-                    ))}
-                </optgroup>
+                    ))
+                  }
+                </div>
               ))}
             </SelectContent>
           </Select>

@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageCircle, Mail, Facebook, Instagram, Send, Link2, Eye, Check, Globe } from 'lucide-react';
+import { Loader2, MessageCircle, Mail, Facebook, Instagram, Send, Link2, FileImage, FileText } from 'lucide-react';
 import {
   type SharePlatform,
+  type ExportFormat,
   getShareTemplates,
   formatMessageWithTemplate,
   getPropertyImages,
@@ -23,20 +24,16 @@ import {
   shareToFacebook,
   shareToInstagram,
   trackShare,
-  canUseWebShare,
-  shareViaWebShare,
   copyToClipboard,
+  exportTemplate,
 } from '@/lib/shareUtils';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
 
 interface ShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  property: any;
+  properties: any[]; // Modificado para aceitar um array de propriedades
 }
 
 const platformConfig = {
@@ -44,50 +41,105 @@ const platformConfig = {
     icon: MessageCircle, 
     label: 'WhatsApp', 
     color: 'text-green-600',
-    instruction: 'Abrirá WhatsApp Web (desktop) ou app (mobile)'
+    instruction: 'Template copiado! Cole no WhatsApp'
   },
   email: { 
     icon: Mail, 
     label: 'Email', 
     color: 'text-blue-600',
-    instruction: 'Digite o email do destinatário para enviar'
+    instruction: 'Abre email e copia HTML formatado'
   },
   messenger: { 
     icon: Send, 
     label: 'Messenger', 
     color: 'text-blue-500',
-    instruction: 'Texto copiado! Abra o Messenger e cole'
+    instruction: 'Template copiado! Cole no Messenger'
   },
   facebook: { 
     icon: Facebook, 
     label: 'Facebook', 
     color: 'text-blue-700',
-    instruction: 'Texto copiado! Cole ao criar post no Facebook'
+    instruction: 'Template copiado! Cole no Facebook'
   },
   instagram: { 
     icon: Instagram, 
     label: 'Instagram', 
     color: 'text-pink-600',
-    instruction: 'Texto copiado! Cole na legenda ao criar post'
+    instruction: 'Template copiado! Cole no Instagram'
   },
 };
 
-export default function ShareDialog({ open, onOpenChange, property }: ShareDialogProps) {
+export default function ShareDialog({ open, onOpenChange, properties }: ShareDialogProps) {
   const { toast } = useToast();
   const [selectedPlatforms, setSelectedPlatforms] = useState<SharePlatform[]>(['whatsapp']);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingPlatform, setLoadingPlatform] = useState<SharePlatform | null>(null);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [systemSettings, setSystemSettings] = useState<any>({ app_name: 'ImoGuru', logo_url: null });
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewMessage, setPreviewMessage] = useState('');
+  const [companySocialMedia, setCompanySocialMedia] = useState<{facebook?: string, instagram?: string}>({});
+  const [selectedTemplateForPlatform, setSelectedTemplateForPlatform] = useState<Record<SharePlatform, string>>({
+    whatsapp: '',
+    email: '',
+    messenger: '',
+    facebook: '',
+    instagram: '',
+  });
 
   useEffect(() => {
-    if (open) {
+    if (open && properties.length > 0) {
       loadTemplates();
       loadSystemSettings();
+      loadCompanySocialMedia();
     }
-  }, [open]);
+  }, [open, properties]);
+
+  useEffect(() => {
+    // Inicializar selectedTemplateForPlatform quando templates são carregados
+    if (templates.length > 0) {
+      const initialSelection: Record<SharePlatform, string> = {
+        whatsapp: '',
+        email: '',
+        messenger: '',
+        facebook: '',
+        instagram: '',
+      };
+      (Object.keys(platformConfig) as SharePlatform[]).forEach(platform => {
+        const defaultTemplate = templates.find(t => t.platform === platform && t.is_default);
+        if (defaultTemplate) {
+          initialSelection[platform] = defaultTemplate.id;
+        } else {
+          const firstTemplate = templates.find(t => t.platform === platform);
+          if (firstTemplate) {
+            initialSelection[platform] = firstTemplate.id;
+          }
+        }
+      });
+      setSelectedTemplateForPlatform(initialSelection);
+    }
+  }, [templates]);
+
+  const loadCompanySocialMedia = async () => {
+    try {
+      if (properties.length === 0) return;
+      
+      const companyId = properties[0].company_id;
+      const { data, error } = await supabase
+        .from('companies')
+        .select('facebook, instagram')
+        .eq('id', companyId)
+        .single();
+      
+      if (error) throw error;
+      
+      setCompanySocialMedia({
+        facebook: data?.facebook || undefined,
+        instagram: data?.instagram || undefined,
+      });
+    } catch (error) {
+      console.error('Error loading company social media:', error);
+    }
+  };
 
   const loadSystemSettings = async () => {
     try {
@@ -131,127 +183,279 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
     );
   };
 
-  const handleCopyLink = async () => {
-    const propertyUrl = `${window.location.origin}/property/${property.id}`;
-    const success = await copyToClipboard(propertyUrl);
-    
-    if (success) {
+  const handleCopyLink = async (platform?: SharePlatform) => {
+    try {
+      // Gerar links para todas as propriedades selecionadas (páginas públicas)
+      const allPropertyUrls = await Promise.all(properties.map(async (prop) => {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('slug')
+          .eq('id', prop.company_id)
+          .single() as { data: { slug: string } | null };
+        
+        return `${window.location.origin}/public-property/${company?.slug || 'company'}/property/${prop.id}`;
+      }));
+
+      const linksString = allPropertyUrls.join('\n');
+
+      const success = await copyToClipboard(linksString);
+      
+      if (success) {
+        toast({
+          title: '✅ Link(s) copiado(s)!',
+          description: properties.length === 1 
+            ? 'O link da página pública foi copiado.' 
+            : `${properties.length} links foram copiados.`,
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: 'Erro ao copiar',
+          description: 'Não foi possível copiar os links.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error copying links:', error);
       toast({
-        title: '✅ Link copiado!',
-        description: 'O link do imóvel foi copiado para área de transferência.',
-        duration: 5000,
-      });
-    } else {
-      toast({
-        title: 'Erro ao copiar',
-        description: 'Não foi possível copiar o link.',
+        title: 'Erro',
+        description: 'Erro ao gerar os links.',
         variant: 'destructive',
       });
     }
   };
 
-  const handlePreview = async () => {
-    if (selectedPlatforms.length === 0) {
+  const handleShareLink = async (platform: SharePlatform) => {
+    try {
+      setLoadingPlatform(platform);
+      
+      // Gerar link para a propriedade
+      const prop = properties[0];
+      const { data: company } = await supabase
+        .from('companies')
+        .select('slug')
+        .eq('id', prop.company_id)
+        .single() as { data: { slug: string } | null };
+      
+      const propertyUrl = `${window.location.origin}/public-property/${company?.slug || 'company'}/property/${prop.id}`;
+      
+      // Copiar para área de transferência
+      await copyToClipboard(propertyUrl);
+      
+      // Abrir a rede social respectiva
+      let socialUrl = '';
+      switch (platform) {
+        case 'whatsapp':
+          socialUrl = `https://wa.me/?text=${encodeURIComponent(propertyUrl)}`;
+          break;
+        case 'facebook':
+          socialUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(propertyUrl)}`;
+          break;
+        case 'messenger':
+          socialUrl = `https://www.facebook.com/dialog/send?link=${encodeURIComponent(propertyUrl)}&app_id=YOUR_APP_ID&redirect_uri=${encodeURIComponent(window.location.href)}`;
+          break;
+        case 'instagram':
+          // Instagram não permite compartilhamento direto via URL, então apenas copiar
+          socialUrl = companySocialMedia.instagram || 'https://www.instagram.com/';
+          break;
+        case 'email':
+          const subject = `Confira este imóvel: ${prop.title || prop.code}`;
+          socialUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(propertyUrl)}`;
+          break;
+      }
+      
+      if (socialUrl) {
+        window.open(socialUrl, '_blank');
+      }
+      
       toast({
-        title: 'Selecione uma plataforma',
+        title: `✅ Link copiado e ${platformConfig[platform].label} aberto!`,
+        description: 'Cole o link (Ctrl+V) na rede social',
+        duration: 4000,
+      });
+      
+      setLoadingPlatform(null);
+    } catch (error) {
+      console.error('Error sharing link:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível compartilhar o link.',
         variant: 'destructive',
       });
-      return;
-    }
-
-    const template = templates.find(t => t.platform === selectedPlatforms[0]);
-    if (template) {
-      const message = await formatMessageWithTemplate(template, property);
-      setPreviewMessage(message);
-      setShowPreview(true);
+      setLoadingPlatform(null);
     }
   };
 
-  const handleWebShare = async () => {
-    const propertyUrl = `${window.location.origin}/property/${property.id}`;
-    const template = templates.find(t => t.platform === 'whatsapp');
-    const message = template ? await formatMessageWithTemplate(template, property) : '';
-    
-    const success = await shareViaWebShare(
-      `Imóvel - ${property.title || property.property_type}`,
-      message,
-      propertyUrl
-    );
+  const handleExport = async (platform: SharePlatform, format: ExportFormat) => {
+    try {
+      const templateId = selectedTemplateForPlatform[platform];
+      if (!templateId) {
+        toast({
+          title: 'Erro',
+          description: 'Selecione um template primeiro.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    if (success) {
-      await trackShare(property.id, 'whatsapp');
+      const template = templates.find(t => t.id === templateId);
+      if (!template) {
+        toast({
+          title: 'Erro',
+          description: 'Template não encontrado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setLoadingPlatform(platform);
+
+      // Exportar cada propriedade
+      for (const prop of properties) {
+        await exportTemplate(template, prop, format);
+      }
+
       toast({
-        title: '✅ Compartilhado com sucesso!',
+        title: `✅ ${format.toUpperCase()} exportado!`,
+        description: properties.length === 1 
+          ? `Template exportado como ${format.toUpperCase()}.` 
+          : `${properties.length} templates exportados como ${format.toUpperCase()}.`,
         duration: 3000,
       });
-      onOpenChange(false);
+
+      setLoadingPlatform(null);
+    } catch (error) {
+      console.error('Error exporting:', error);
+      toast({
+        title: 'Erro ao exportar',
+        description: 'Não foi possível exportar o template.',
+        variant: 'destructive',
+      });
+      setLoadingPlatform(null);
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = async (platformToShare: SharePlatform, templateId: string, closeAfter: boolean = false) => {
+    console.log(`🚀 Iniciando compartilhamento em ${platformToShare} com template ${templateId}`);
+    setLoadingPlatform(platformToShare);
+
+    try {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) throw new Error(`Template não encontrado para ${platformConfig[platformToShare].label}.`);
+
+      // Compartilhar cada propriedade individualmente
+      for (const prop of properties) {
+        // Para email, gerar HTML. Para outras plataformas, gerar texto simples
+        const forceHtml = platformToShare === 'email';
+        const message = await formatMessageWithTemplate(template, prop, forceHtml);
+        const images = getPropertyImages(prop, template.max_images);
+
+        let result: any = false;
+
+        switch (platformToShare) {
+          case 'whatsapp':
+            console.log(`📱 Compartilhando em WhatsApp`);
+            result = await shareToWhatsApp(message, images);
+            break;
+          case 'email':
+            console.log(`📧 Compartilhando em Email`);
+            result = await shareToEmail(prop, message, images, systemSettings);
+            if (result) {
+              toast({
+                title: '📧 Email preparado!',
+                description: 'O conteúdo HTML formatado foi copiado. Cole (Ctrl+V) no corpo do email que será aberto.',
+                duration: 6000,
+              });
+            }
+            break;
+          case 'messenger':
+            console.log(`💬 Compartilhando em Messenger`);
+            result = await shareToMessenger(message);
+            break;
+          case 'facebook':
+            console.log(`👍 Compartilhando em Facebook`);
+            result = await shareToFacebook(message, images, companySocialMedia.facebook);
+            break;
+          case 'instagram':
+            console.log(`📷 Compartilhando em Instagram`);
+            result = await shareToInstagram(message, companySocialMedia.instagram);
+            break;
+        }
+
+        console.log(`✅ Resultado do compartilhamento em ${platformToShare}:`, result);
+        
+        if (result) {
+          let contactInfo: { email?: string } | undefined;
+          if (platformToShare === 'email') {
+            contactInfo = { email: undefined };
+          }
+          await trackShare(prop.id, platformToShare, contactInfo);
+        }
+      }
+
+      // Toast genérico (exceto para email que já tem toast específico)
+      if (platformToShare !== 'email') {
+        toast({
+          title: `✅ ${platformConfig[platformToShare].label} aberto!`,
+          description: `Template copiado para área de transferência. Cole (Ctrl+V) no ${platformConfig[platformToShare].label}`,
+          duration: 5000,
+        });
+      }
+
+      // Só fecha o diálogo se closeAfter for true (chamado por handleShareAllSelected)
+      if (closeAfter) {
+        onOpenChange(false);
+      }
+
+    } catch (error: any) {
+      console.error(`Erro ao compartilhar em ${platformToShare}:`, error);
+      toast({
+        title: 'Erro ao compartilhar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingPlatform(null);
+    }
+  };
+
+  const handleShareAllSelected = async () => {
     if (selectedPlatforms.length === 0) {
       toast({
         title: 'Selecione ao menos uma plataforma',
+        description: 'Marque os checkboxes das plataformas que deseja compartilhar.',
         variant: 'destructive',
       });
       return;
     }
 
     setLoading(true);
-
+    let successCount = 0;
+    
     try {
       for (const platform of selectedPlatforms) {
-        const template = templates.find(t => t.platform === platform);
-        if (!template) continue;
-
-        const message = await formatMessageWithTemplate(template, property);
-        const images = getPropertyImages(property, template.max_images);
-
-        let result: any = false;
-
-        switch (platform) {
-          case 'whatsapp':
-            result = await shareToWhatsApp(message, images);
-            break;
-          case 'email':
-            result = await shareToEmail(property, message, images, systemSettings);
-            break;
-          case 'messenger':
-            result = await shareToMessenger(message);
-            break;
-          case 'facebook':
-            result = await shareToFacebook(message, images);
-            break;
-          case 'instagram':
-            result = await shareToInstagram(message);
-            break;
-        }
-
-        if (result) {
-          await trackShare(property.id, platform);
-          
-          if (result === 'clipboard') {
-            toast({
-              title: `✅ ${platformConfig[platform].label}`,
-              description: platformConfig[platform].instruction,
-              duration: 7000,
-            });
-          } else {
-            toast({
-              title: `✅ ${platformConfig[platform].label}`,
-              description: platformConfig[platform].instruction,
-              duration: 5000,
-            });
-          }
+        const templateId = selectedTemplateForPlatform[platform];
+        if (templateId) {
+          await handleShare(platform, templateId, false); // closeAfter = false, pois vamos fechar manualmente no final
+          successCount++;
         }
       }
-
+      
+      // Fecha o diálogo após compartilhar todas as plataformas
       onOpenChange(false);
-    } catch (error: any) {
+      
       toast({
-        title: 'Erro ao compartilhar',
-        description: error.message,
-        variant: 'destructive',
+        title: '✅ Compartilhamento concluído!',
+        description: `Imóveis compartilhados em ${successCount} plataforma(s).`,
+        duration: 4000,
+      });
+      
+    } catch (error) {
+      console.error("Erro ao compartilhar tudo:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível compartilhar em todas as plataformas.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -260,11 +464,11 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Compartilhar Imóvel</DialogTitle>
           <DialogDescription>
-            Selecione as plataformas onde deseja compartilhar este imóvel
+            Selecione as plataformas e templates para compartilhar este imóvel
           </DialogDescription>
         </DialogHeader>
 
@@ -274,156 +478,104 @@ export default function ShareDialog({ open, onOpenChange, property }: ShareDialo
           </div>
         ) : (
           <>
-            {/* Web Share API Button (if available) */}
-            {canUseWebShare() && (
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                <Button 
-                  onClick={handleWebShare} 
-                  className="w-full"
-                  size="lg"
-                >
-                  <Globe className="mr-2 h-5 w-5" />
-                  Compartilhar via Sistema
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Escolha o app de preferência no seu dispositivo
-                </p>
-              </div>
-            )}
-
-            {/* Copy Link Button */}
-            <Button 
-              onClick={handleCopyLink} 
-              variant="outline" 
-              className="w-full"
-              size="lg"
-            >
-              <Link2 className="mr-2 h-5 w-5" />
-              Copiar Link do Imóvel
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Ou compartilhe diretamente
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
+            {/* Seção de Compartilhamento Direto */}
+            <div className="space-y-4">
               {Object.entries(platformConfig).map(([platform, config]) => {
                 const Icon = config.icon;
-                const template = templates.find(t => t.platform === platform);
-                
-                if (!template) return null;
+                const platformTemplates = templates.filter(t => t.platform === platform);
 
                 return (
-                  <div key={platform} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        id={platform}
-                        checked={selectedPlatforms.includes(platform as SharePlatform)}
-                        onCheckedChange={() => togglePlatform(platform as SharePlatform)}
-                      />
-                      <Label
-                        htmlFor={platform}
-                        className="flex items-center gap-2 cursor-pointer flex-1"
-                      >
-                        <Icon className={`h-5 w-5 ${config.color}`} />
-                        <div className="flex-1">
-                          <div className="font-medium">{config.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {config.instruction}
-                          </div>
-                        </div>
-                      </Label>
+                  <Card key={platform} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={platform}
+                          checked={selectedPlatforms.includes(platform as SharePlatform)}
+                          onCheckedChange={() => togglePlatform(platform as SharePlatform)}
+                        />
+                        <Label
+                          htmlFor={platform}
+                          className="flex items-center gap-2 cursor-pointer flex-1"
+                        >
+                          <Icon className={`h-6 w-6 ${config.color}`} />
+                          <h4 className="font-semibold">{config.label}</h4>
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Seletor de Template (sempre visível) */}
+                        {platformTemplates.length > 0 && (
+                          <Select
+                            value={selectedTemplateForPlatform[platform as SharePlatform]}
+                            onValueChange={(value) =>
+                              setSelectedTemplateForPlatform(prev => ({ ...prev, [platform]: value }))
+                            }
+                          >
+                            <SelectTrigger className="w-full sm:w-[200px]">
+                              <SelectValue placeholder="Selecionar Template" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {platformTemplates.map(tpl => (
+                                <SelectItem key={tpl.id} value={tpl.id}>{tpl.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleCopyLink(platform as SharePlatform)}
+                          title="Copiar Link da Página Pública"
+                        >
+                          <Link2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleExport(platform as SharePlatform, 'jpg')}
+                          disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
+                          title="Exportar como JPG"
+                        >
+                          <FileImage className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleExport(platform as SharePlatform, 'pdf')}
+                          disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
+                          title="Exportar como PDF"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleShareLink(platform as SharePlatform)}
+                          disabled={loadingPlatform !== null}
+                          title="Compartilhar apenas o link da página pública"
+                          className="flex-1"
+                        >
+                          {loadingPlatform === platform ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <>🔗 </>}
+                          Link
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleShare(platform as SharePlatform, selectedTemplateForPlatform[platform as SharePlatform])}
+                          disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
+                          title="Compartilhar com template formatado"
+                          className="flex-1"
+                        >
+                          {loadingPlatform === platform && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Template
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
-
-            {/* Message Preview */}
-            <Collapsible open={showPreview} onOpenChange={setShowPreview}>
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={handlePreview}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  {showPreview ? 'Ocultar Preview' : 'Ver Preview da Mensagem'}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-muted p-4 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-                  {previewMessage || 'Selecione uma plataforma para ver o preview'}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <div className="flex gap-2 justify-end pt-4">
-              {Object.entries(platformConfig).map(([platform, config]) => {
-                const Icon = config.icon;
-                const template = templates.find(t => t.platform === platform);
-                
-                if (!template) return null;
-
-                return (
-                  <div key={platform} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        id={platform}
-                        checked={selectedPlatforms.includes(platform as SharePlatform)}
-                        onCheckedChange={() => togglePlatform(platform as SharePlatform)}
-                      />
-                      <Label
-                        htmlFor={platform}
-                        className="flex items-center gap-2 cursor-pointer flex-1"
-                      >
-                        <Icon className={`h-5 w-5 ${config.color}`} />
-                        <div className="flex-1">
-                          <div className="font-medium">{config.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {config.instruction}
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Message Preview */}
-            <Collapsible open={showPreview} onOpenChange={setShowPreview}>
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={handlePreview}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  {showPreview ? 'Ocultar Preview' : 'Ver Preview da Mensagem'}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-muted p-4 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-                  {previewMessage || 'Selecione uma plataforma para ver o preview'}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <div className="flex gap-2 justify-end pt-4">
+            
+            <div className="flex justify-end pt-4 gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleShare} disabled={loading || selectedPlatforms.length === 0}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Compartilhar
+                Fechar
               </Button>
             </div>
           </>
