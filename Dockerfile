@@ -23,7 +23,7 @@ COPY package*.json ./
 # Instala dependências mínimas e servidor estático
 RUN npm install --production && npm install -g serve
 
-EXPOSE 8080
+EXPOSE 8085
 
 # Comando padrão para servir o build
-CMD ["serve", "-s", "dist", "-l", "8080"]
+CMD ["serve", "-s", "dist", "-l", "8085"]
