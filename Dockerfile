@@ -4,36 +4,26 @@
 #          3. Formato do CMD (Para resolver o erro Exited/502 no EasyPanel)
 
 FROM node:20-alpine AS builder
+# Etapa 1: build
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Argumentos de Build: Estes valores são passados pelo `docker build --build-arg...`
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
-
-COPY package.json ./
-# .
+COPY package*.json ./
 RUN npm install
 COPY . .
-
-# CRÍTICO: INJEÇÃO CORRETA - Cria o .env.production usando os argumentos (ARG).
-# Garante que as variáveis do EasyPanel sejam usadas no build do VITE.
-RUN echo "VITE_SUPABASE_URL=$VITE_SUPABASE_URL" > .env.production && \
-    echo "VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY" >> .env.production
-
-# Rodar a build com as variáveis de produção
 RUN npm run build
 
+# Etapa 2: execução (produção)
 FROM node:20-alpine
 WORKDIR /app
-# Instalar wget para healthcheck
-RUN apk add --no-cache wget
-# Apenas copie o resultado da build
-COPY --from=builder /app/dist ./dist
-COPY package.json ./
-RUN npm install --production
-RUN npm install -g serve
 
-# PORTA ESTÁVEL
-EXPOSE 8085 
-# CORREÇÃO CRÍTICA: Uso do formato JSON (Exec Form) para o CMD
-CMD ["serve", "-s", "dist", "-l", "8085"]
+# Copia apenas o build final e dependências necessárias
+COPY --from=builder /app/dist ./dist
+COPY package*.json ./
+
+# Instala dependências mínimas e servidor estático
+RUN npm install --production && npm install -g serve
+
+EXPOSE 8080
+
+# Comando padrão para servir o build
+CMD ["serve", "-s", "dist", "-l", "8080"]
