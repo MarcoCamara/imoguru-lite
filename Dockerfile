@@ -1,29 +1,32 @@
-# Dockerfile FINAL GARANTIDO (v1.0.52) - Versão CORRIGIDA
-# Resolve: 1. Injeção de Variáveis no Build (ARG)
-#          2. Injeção de Chave Publishable (fim do hardcode da Anon Key)
-#          3. Formato do CMD (Para resolver o erro Exited/502 no EasyPanel)
+# Frontend Dockerfile - produção (servir build com serve)
+# Assumimos que o código do frontend está na raiz do repositório (como no seu caso).
 
 FROM node:20-alpine AS builder
-# Etapa 1: build
-FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Copia package*, instala e builda o projeto
 COPY package*.json ./
-RUN npm install
+RUN npm ci --silent
 COPY . .
 RUN npm run build
 
-# Etapa 2: execução (produção)
-FROM node:20-alpine
+# Stage de produção: servidor leve
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Copia apenas o build final e dependências necessárias
+# instala serve (necessário /bin/sh)
+RUN apk add --no-cache bash curl
+# copia apenas o build final
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
-# Instala dependências mínimas e servidor estático
-RUN npm install --production && npm install -g serve
+# instalar apenas dependências de produção se necessário (opcional)
+RUN npm ci --production --silent || true
+# instalar servidor estático
+RUN npm install -g serve --silent
 
+# Expor a porta interna que o container vai escutar
 EXPOSE 8085
 
-# Comando padrão para servir o build
+# usar porta 8085 internamente (você pediu 8085)
 CMD ["serve", "-s", "dist", "-l", "8085"]

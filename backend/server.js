@@ -60,11 +60,19 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+
+
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   console.log(`📁 Uploads directory: ${process.env.UPLOAD_DIR || './uploads'}`);
   console.log(`🌍 CORS origin: ${process.env.CORS_ORIGIN || '*'}`);
 });
+
+
+
+
 
 module.exports = app;

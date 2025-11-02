@@ -1,28 +1,39 @@
+version: "3.9"
+
 services:
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
       args:
+        # build args (se precisar)
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+    env_file: 
+      - .env
     expose:
-      - "8085"
-    environment:
-      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-      - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+      - "8085"           # expõe internamente porta 8085 (EasyPanel mapeia porta externa)
     restart: unless-stopped
+    depends_on:
+      - backend
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8085 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      test: ["CMD-SHELL", "curl -f http://localhost:8085/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     expose:
       - "3001"
     environment:
@@ -33,13 +44,21 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
-      - RESEND_API_KEY=${RESEND_API_KEY}
       - BOOTSTRAP_SECRET=${BOOTSTRAP_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# OBS: Não adicionamos container Postgres porque você já usa Supabase (DB remoto).
+# Se quiser um Postgres local para dev, eu envio a configuração a seguir.
