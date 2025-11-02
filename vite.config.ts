@@ -7,16 +7,22 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   // ***********************************************
   // ⚡ AJUSTES PARA DEPLOY NO EASY PANEL / VPS
-  // Base deve ser absoluta para evitar 404 em roteamento React
-  base: mode === "production" ? "/" : "/",
+  // Base absoluta para evitar 404 em roteamento React
+  base: "/",
 
   server: {
-    // O EasyPanel precisa que o Vite ouça em 0.0.0.0 (não apenas localhost)
+    // O frontend precisa escutar em 0.0.0.0 (acessível externamente)
     host: "0.0.0.0",
-    port: 80, // Agora alinhado ao Dockerfile (porta esperada pelo proxy)
+    port: 80, // ✅ porta interna agora igual à exposta (corrigido)
+    strictPort: true, // falha se a porta já estiver em uso
+    cors: true, // ✅ permite comunicação com backend em outra porta/container
   },
 
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    // ✅ o componentTagger só roda em modo de desenvolvimento
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
 
   resolve: {
     alias: {
@@ -37,5 +43,9 @@ export default defineConfig(({ mode }) => ({
   css: {
     postcss: "./postcss.config.js",
   },
-}));
 
+  preview: {
+    host: "0.0.0.0",
+    port: 80, // ✅ igual ao server.port — evita conflito de proxy
+  },
+}));

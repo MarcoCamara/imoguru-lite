@@ -7,11 +7,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 8085",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview --host 0.0.0.0 --port 8085"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
