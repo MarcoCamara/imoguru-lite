@@ -6,23 +6,26 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   // ***********************************************
-  // ⚡ CORREÇÃO CRÍTICA PARA DEPLOY NO DOCKER/EASYPANEL
-  // Usa caminhos absolutos para produção (melhor para VPS)
-  base: mode === 'production' ? '/' : './', 
-  // ***********************************************
+  // ⚡ AJUSTES PARA DEPLOY NO EASY PANEL / VPS
+  // Base deve ser absoluta para evitar 404 em roteamento React
+  base: mode === "production" ? "/" : "/",
 
   server: {
-    host: "localhost",
-    port: 8085,
+    // O EasyPanel precisa que o Vite ouça em 0.0.0.0 (não apenas localhost)
+    host: "0.0.0.0",
+    port: 80, // Agora alinhado ao Dockerfile (porta esperada pelo proxy)
   },
+
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
   build: {
-    // Otimizações para produção
+    outDir: "dist",
     cssCodeSplit: false,
     rollupOptions: {
       output: {
@@ -30,7 +33,9 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+
   css: {
-    postcss: './postcss.config.js',
+    postcss: "./postcss.config.js",
   },
 }));
+
