@@ -1,17 +1,33 @@
-# backend/Dockerfile
+# -------------------------------------------------
+# 🧠 Backend - Node.js (Produção)
+# -------------------------------------------------
 FROM node:20-alpine
+
+# Define diretório de trabalho dentro do container
 WORKDIR /app
 
-# Healthcheck tool
-RUN apk add --no-cache curl
-
+# Copia arquivos de dependências primeiro (melhor cache no build)
 COPY package*.json ./
-RUN npm ci --silent
+
+# Instala apenas dependências de produção
+RUN npm ci --only=production
+
+# Copia o restante do código da aplicação
 COPY . .
 
-# Expor porta do app
+# Define variáveis de ambiente padrão
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV TZ=America/Sao_Paulo
+
+# Expõe a porta interna usada pelo app (mesma configurada no compose)
 EXPOSE 3001
 
-# IMPORTANT: garanta que o server escute 0.0.0.0
+# Healthcheck opcional (o compose já usa, mas deixa pronto se rodar isolado)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD wget -q --spider http://localhost:3001/health || exit 1
+
+# Comando para iniciar o servidor (ajuste se o seu arquivo for index.js ou app.js)
 CMD ["node", "server.js"]
+
 

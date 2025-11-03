@@ -1,9 +1,9 @@
 #version: "3.9"
 
 services:
-  # ---------------------------
-  # 🧠 Backend (Node.js)
-  # ---------------------------
+  # -------------------------------------------------
+  # 🧠 Backend - Node.js
+  # -------------------------------------------------
   rose-backend:
     container_name: rose-backend
     build:
@@ -11,17 +11,34 @@ services:
       dockerfile: Dockerfile
     image: rose-backend:latest
     restart: unless-stopped
+
+    # Mapeamento de portas (externa:interna)
     ports:
-      - "8080:8080"
+      - "8080:3001"
+
+    # Carrega variáveis de ambiente (opcional, se existir deploy.env)
+    env_file:
+      - ./deploy.env
+
+    # Variáveis básicas do container
     environment:
       NODE_ENV: production
+      PORT: 3001
       TZ: America/Sao_Paulo
+
+    # Healthcheck (para reiniciar se falhar)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
     networks:
       - imoguru_net
 
-  # ---------------------------
-  # 💎 Frontend (Vite + React)
-  # ---------------------------
+  # -------------------------------------------------
+  # 💎 Frontend - React (Vite Build + Serve)
+  # -------------------------------------------------
   rose-frontend:
     container_name: rose-frontend
     build:
@@ -29,16 +46,30 @@ services:
       dockerfile: Dockerfile
     image: rose-frontend:latest
     restart: unless-stopped
+
+    # O frontend sempre expõe porta 80 (EasyPanel publica essa automaticamente)
     ports:
-      - "8085:80"
+      - "80:80"
+
     depends_on:
       - rose-backend
+
     environment:
       NODE_ENV: production
       TZ: America/Sao_Paulo
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
     networks:
       - imoguru_net
 
+# -------------------------------------------------
+# 🌐 Rede interna isolada
+# -------------------------------------------------
 networks:
   imoguru_net:
     driver: bridge

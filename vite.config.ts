@@ -3,33 +3,41 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
+// Configuração para produção no EasyPanel / Hostinger
 export default defineConfig(({ mode }) => ({
-  // ***********************************************
-  // ⚡ AJUSTES PARA DEPLOY NO EASY PANEL / VPS
-  // Base absoluta para evitar 404 em roteamento React
+  // Base absoluta — evita 404 em rotas React Router
   base: "/",
 
+  // Configurações do servidor de desenvolvimento (npm run dev)
   server: {
-    // O frontend precisa escutar em 0.0.0.0 (acessível externamente)
-    host: "0.0.0.0",
-    port: 80, // ✅ porta interna agora igual à exposta (corrigido)
-    strictPort: true, // falha se a porta já estiver em uso
-    cors: true, // ✅ permite comunicação com backend em outra porta/container
+    host: "0.0.0.0", // necessário para acesso externo
+    port: 80,         // o EasyPanel exige que o container escute na 80
+    strictPort: true,
+    cors: true,
+    // 🔁 Proxy opcional: permite chamadas diretas ao backend local (dev only)
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080", // backend local ou container
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 
+  // Plugins
   plugins: [
     react(),
-    // ✅ o componentTagger só roda em modo de desenvolvimento
     mode === "development" && componentTagger(),
   ].filter(Boolean),
 
+  // Resolução de aliases (import "@/components/...")
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
 
+  // Configuração de build para produção
   build: {
     outDir: "dist",
     cssCodeSplit: false,
@@ -44,8 +52,9 @@ export default defineConfig(({ mode }) => ({
     postcss: "./postcss.config.js",
   },
 
+  // Preview (npm run preview / produção)
   preview: {
     host: "0.0.0.0",
-    port: 80, // ✅ igual ao server.port — evita conflito de proxy
+    port: 80,
   },
 }));
