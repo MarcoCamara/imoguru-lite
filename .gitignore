@@ -14,6 +14,12 @@ dist-ssr
 .env
 .env.local
 .env*.local
+.env.production
+deploy.env
+
+# Arquivos de deploy com credenciais
+*.env.production
+deploy.env
 
 # Editor directories and files
 .vscode/*

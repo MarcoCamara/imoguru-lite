@@ -15,7 +15,6 @@ const uploadRoutes = require('./routes/upload');
 const filesRoutes = require('./routes/files');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
@@ -59,8 +58,6 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
-
-
 
 // Start server
 const PORT = process.env.PORT || 3001;

@@ -1,4 +1,4 @@
-#version: "3.9"
+version: "3.9"
 
 services:
   # -------------------------------------------------
@@ -12,9 +12,9 @@ services:
     image: rose-backend:latest
     restart: unless-stopped
 
-    # Mapeamento de portas (externa:interna)
+    # Mapeamento de portas (externa:interna) - configurável via variável
     ports:
-      - "8080:3001"
+      - "${BACKEND_PORT:-3001}:3001"
 
     # Carrega variáveis de ambiente (opcional, se existir deploy.env)
     env_file:
@@ -44,12 +44,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
     image: rose-frontend:latest
     restart: unless-stopped
 
-    # O frontend sempre expõe porta 80 (EasyPanel publica essa automaticamente)
+    # Porta configurável via variável de ambiente (padrão: 3000 para evitar conflito com porta 80)
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-3000}:80"
 
     depends_on:
       - rose-backend

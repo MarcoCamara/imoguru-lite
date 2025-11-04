@@ -9,8 +9,9 @@ WORKDIR /app
 # Copia arquivos de dependências primeiro (melhor cache no build)
 COPY package*.json ./
 
-# Instala apenas dependências de produção
-RUN npm ci --only=production
+# Instala dependências de produção e wget para healthcheck
+RUN npm ci --only=production && \
+    apk add --no-cache wget
 
 # Copia o restante do código da aplicação
 COPY . .

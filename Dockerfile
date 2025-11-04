@@ -12,6 +12,16 @@ COPY package*.json ./
 # Instala dependências de build
 RUN npm install
 
+# Build args para variáveis de ambiente do Vite (build time)
+ARG VITE_API_URL
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+
+# Define variáveis de ambiente para o build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+
 # Copia todo o restante do código
 COPY . .
 
@@ -26,8 +36,9 @@ FROM node:20-alpine
 # Define diretório de trabalho
 WORKDIR /app
 
-# Instala servidor estático leve
-RUN npm install -g serve
+# Instala servidor estático leve e wget para healthcheck
+RUN npm install -g serve && \
+    apk add --no-cache wget
 
 # Copia apenas os arquivos necessários do build
 COPY --from=builder /app/dist ./dist
