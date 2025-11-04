@@ -7,53 +7,42 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copia arquivos de dependências primeiro (melhor cache)
-# -------------------------------------------------
-# ✅ Etapa 1: Build da aplicação React (Vite)
-# -------------------------------------------------
-FROM node:20-alpine AS builder
-
-# Define o diretório de trabalho dentro do container
-WORKDIR /app
-
-# Copia apenas os arquivos de dependência primeiro (melhor cache)
 COPY package*.json ./
 
-# Instala dependências (somente as necessárias)
-RUN npm ci
+# Instala dependências de build
+RUN npm install
 
-# Copia o restante do código da aplicação
+# Copia todo o restante do código
 COPY . .
 
-# Gera o build de produção do Vite
+# Gera o build de produção
 RUN npm run build
 
-
 # -------------------------------------------------
-# ✅ Etapa 2: Servidor de Produção (com "serve")
+# ✅ Etapa 2: Servidor de Produção
 # -------------------------------------------------
 FROM node:20-alpine
 
-# Define o diretório de trabalho
+# Define diretório de trabalho
 WORKDIR /app
 
-# Instala o servidor estático leve
+# Instala servidor estático leve
 RUN npm install -g serve
 
-# Copia o build gerado na etapa anterior
+# Copia apenas os arquivos necessários do build
 COPY --from=builder /app/dist ./dist
 
-# Define variável de ambiente de produção
+# Define variável de ambiente padrão
 ENV NODE_ENV=production
 
-# Porta interna do container (o EasyPanel só aceita 80)
+# O EasyPanel escuta por padrão na porta 80
 EXPOSE 80
 
-# Healthcheck opcional (o EasyPanel pode reiniciar se falhar)
+# Healthcheck opcional (detecção de falhas automáticas)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -q --spider http://localhost:80 || exit 1
 
-# Comando final: inicia o servidor estático
+# Comando final: iniciar o servidor
 CMD ["serve", "-s", "dist", "-l", "80"]
-
 
 
