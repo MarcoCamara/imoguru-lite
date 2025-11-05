@@ -35,11 +35,12 @@ if (-not (Test-Path ".env.local")) {
         Write-Host "⚠️  IMPORTANTE: Ajuste as variáveis em .env.local com seus valores" -ForegroundColor Yellow
     } else {
         Write-Host "⚠️  Arquivo .env.example não encontrado. Criando .env.local básico..." -ForegroundColor Yellow
-        @"
+        $content = @"
 VITE_SUPABASE_URL=http://127.0.0.1:54321
 VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_aqui
 VITE_API_URL=http://localhost:3001
-"@ | Out-File -FilePath ".env.local" -Encoding UTF8
+"@
+        $content | Out-File -FilePath ".env.local" -Encoding UTF8
         Write-Host "✅ Arquivo .env.local criado" -ForegroundColor Green
     }
 } else {
@@ -73,7 +74,7 @@ if (-not (Test-Path ".env")) {
         Write-Host "⚠️  IMPORTANTE: Ajuste as variáveis em backend/.env com seus valores" -ForegroundColor Yellow
     } else {
         Write-Host "⚠️  Arquivo .env.example não encontrado. Criando .env básico..." -ForegroundColor Yellow
-        @"
+        $content = @"
 DB_HOST=127.0.0.1
 DB_PORT=54322
 DB_NAME=postgres
@@ -84,7 +85,8 @@ BOOTSTRAP_SECRET=desenvolvimento_local_bootstrap_secret
 CORS_ORIGIN=http://localhost:8085
 PORT=3001
 NODE_ENV=development
-"@ | Out-File -FilePath ".env" -Encoding UTF8
+"@
+        $content | Out-File -FilePath ".env" -Encoding UTF8
         Write-Host "✅ Arquivo backend/.env criado" -ForegroundColor Green
     }
 } else {

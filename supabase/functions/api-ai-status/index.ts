@@ -1,86 +1,108 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-// Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+};
 
-console.log("Hello from Functions!")
-
-Deno.serve(async (req) => {
+serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Obter API Key do header
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key is required.' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: 'API Key não fornecida. Use o header x-api-key.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { data: apiKeyData, error: apiKeyError } = await supabaseAdmin
+    // Validar API Key - Filtrar por api_type e archived na query (como nas outras APIs)
+    const { data: apiKeyData, error: apiKeyError } = await supabase
       .from('api_keys')
-      .select('id, company_id, api_type')
+      .select('id, company_id, api_type, archived')
       .eq('api_key', apiKey)
+      .eq('api_type', 'ai_status')
+      .eq('archived', false)
       .single();
 
     if (apiKeyError || !apiKeyData) {
-      return new Response(JSON.stringify({ error: 'Invalid API key.' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    if (apiKeyData.api_type !== 'ai_status') {
-        return new Response(JSON.stringify({ error: 'API key does not have permission for this action.' }), {
-            status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      return new Response(
+        JSON.stringify({ error: 'API Key inválida ou arquivada.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { data: companyData, error: companyError } = await supabaseAdmin
+    // Atualizar uso da API Key (como nas outras APIs)
+    await supabase
+      .from('api_keys')
+      .update({
+        last_used_at: new Date().toISOString(),
+      })
+      .eq('id', apiKeyData.id);
+    
+    // Incrementar usage_count usando RPC (se disponível)
+    try {
+      await supabase.rpc('increment_usage_count', { key_id: apiKeyData.id });
+    } catch (rpcError) {
+      // Se RPC não existir, tenta incrementar manualmente
+      const { data: current } = await supabase
+        .from('api_keys')
+        .select('usage_count')
+        .eq('id', apiKeyData.id)
+        .single();
+      
+      if (current) {
+        await supabase
+          .from('api_keys')
+          .update({ usage_count: (current.usage_count || 0) + 1 })
+          .eq('id', apiKeyData.id);
+      }
+    }
+
+    // Buscar dados da empresa
+    const { data: companyData, error: companyError } = await supabase
       .from('companies')
       .select('ai_enabled')
       .eq('id', apiKeyData.company_id)
       .single();
 
     if (companyError || !companyData) {
-        return new Response(JSON.stringify({ error: 'Company not found for this API key.' }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      return new Response(
+        JSON.stringify({ error: 'Empresa não encontrada para esta API Key.' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Atualiza o last_used_at e incrementa o usage_count
-    await supabaseAdmin
-        .from('api_keys')
-        .update({ 
-            last_used_at: new Date().toISOString()
-        })
-        .eq('api_key', apiKey);
-
-    await supabaseAdmin.rpc('increment_usage_count', { key_id: apiKeyData.id });
-
-
-    return new Response(JSON.stringify({ ai_enabled: companyData.ai_enabled }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        ai_enabled: companyData.ai_enabled || false,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    console.error('Error in api-ai-status:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
 
