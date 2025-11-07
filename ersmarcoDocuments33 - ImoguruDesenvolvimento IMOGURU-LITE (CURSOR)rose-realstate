@@ -1,0 +1,271 @@
+warning: in the working copy of 'src/pages/PublicPropertyView.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/pages/PublicPropertyView.tsx b/src/pages/PublicPropertyView.tsx[m
+[1mindex 8b50d98..2b636cf 100644[m
+[1m--- a/src/pages/PublicPropertyView.tsx[m
+[1m+++ b/src/pages/PublicPropertyView.tsx[m
+[36m@@ -31,6 +31,10 @@[m [mexport default function PublicPropertyView() {[m
+ [m
+   const primaryColor = company?.primary_color || '#8b5cf6';[m
+   const secondaryColor = company?.secondary_color || '#ec4899';[m
+[32m+[m[32m  const accentGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`;[m
+[32m+[m[32m  const solidButtonStyle = { background: accentGradient, border: 'none', color: '#ffffff' };[m
+[32m+[m[32m  const outlineButtonStyle = { borderColor: primaryColor, color: primaryColor };[m
+[32m+[m[32m  const whatsappButtonStyle = { backgroundColor: '#22c55e', border: 'none', color: '#ffffff' };[m
+ [m
+   useEffect(() => {[m
+     if (!companySlug || !propertyId) return;[m
+[36m@@ -89,6 +93,38 @@[m [mexport default function PublicPropertyView() {[m
+     }[m
+   };[m
+ [m
+[32m+[m[32m  const handleWhatsAppClick = async () => {[m
+[32m+[m[32m    if (!companySlug || !propertyId) return;[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Gerar o link da página do imóvel[m
+[32m+[m[32m    const propertyUrl = `${window.location.origin}/public-property/${companySlug}/property/${propertyId}`;[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Copiar o link para a área de transferência para garantir que seja fácil de colar[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      await navigator.clipboard.writeText(propertyUrl);[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      console.warn('Não foi possível copiar o link para a área de transferência:', error);[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Criar a mensagem com o link em uma linha separada (com quebras de linha)[m
+[32m+[m[32m    // O WhatsApp reconhece URLs completas como clicáveis quando estão em uma linha separada[m
+[32m+[m[32m    // Usando \n\n para criar uma linha em branco antes do link, garantindo que seja clicável[m
+[32m+[m[32m    const message = `Quero mais informações do imóvel:\n\n${propertyUrl}`;[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Abrir WhatsApp com a mensagem pré-preenchida[m
+[32m+[m[32m    const whatsappNumber = company.whatsapp.replace(/\D/g, '');[m
+[32m+[m[32m    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;[m
+[32m+[m[41m    [m
+[32m+[m[32m    window.open(whatsappUrl, '_blank');[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Mostrar toast informando que o link foi copiado[m
+[32m+[m[32m    toast({[m
+[32m+[m[32m      title: 'Link copiado!',[m
+[32m+[m[32m      description: 'O link foi copiado para a área de transferência. Se não aparecer clicável no WhatsApp, cole-o manualmente (Ctrl+V).',[m
+[32m+[m[32m      duration: 5000,[m
+[32m+[m[32m    });[m
+[32m+[m[32m  };[m
+[32m+[m
+   const handleSubmitContact = async () => {[m
+     if (!contactForm.name || !contactForm.email || !contactForm.phone) {[m
+       toast({[m
+[36m@@ -161,87 +197,114 @@[m [mexport default function PublicPropertyView() {[m
+   const sortedImages = property.property_images?.sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)) || [];[m
+ [m
+   return ([m
+[31m-    <div className="min-h-screen bg-gray-50">[m
+[32m+[m[32m    <div className="min-h-screen bg-gray-50 overflow-x-hidden">[m
+       {/* Header */}[m
+[31m-      <header className="bg-white shadow-sm sticky top-0 z-40">[m
+[31m-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">[m
+[32m+[m[32m      <header className="bg-white shadow-sm sticky top-0 z-40 w-full">[m
+[32m+[m[32m        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2 max-w-full">[m
+           {/* Logo */}[m
+[31m-          {company.logo_url && ([m
+[31m-            <img [m
+[31m-              src={company.logo_url} [m
+[31m-              alt={company.name} [m
+[31m-              className="h-12 object-contain"[m
+[31m-            />[m
+[31m-          )}[m
+[31m-          {!company.logo_url && ([m
+[31m-            <h1 className="text-xl font-bold" style={{ color: primaryColor }}>[m
+[31m-              {company.name}[m
+[31m-            </h1>[m
+[31m-          )}[m
+[31m-[m
+[31m-          <div className="flex gap-2">[m
+[32m+[m[32m          <div className="flex-shrink-0 min-w-0">[m
+[32m+[m[32m            {company.logo_url && ([m
+[32m+[m[32m              <img[m[41m [m
+[32m+[m[32m                src={company.logo_url}[m[41m [m
+[32m+[m[32m                alt={company.name}[m[41m [m
+[32m+[m[32m                className="h-8 sm:h-12 object-contain max-w-[120px] sm:max-w-none"[m
+[32m+[m[32m              />[m
+[32m+[m[32m            )}[m
+[32m+[m[32m            {!company.logo_url && ([m
+[32m+[m[32m              <h1 className="text-base sm:text-xl font-bold truncate" style={{ color: primaryColor }}>[m
+[32m+[m[32m                {company.name}[m
+[32m+[m[32m              </h1>[m
+[32m+[m[32m            )}[m
+[32m+[m[32m          </div>[m
+[32m+[m
+[32m+[m[32m          <div className="flex gap-1 sm:gap-2 flex-shrink-0">[m
+             <Button[m
+               variant="outline"[m
+               size="sm"[m
+[32m+[m[32m              className="hidden sm:flex"[m
+[32m+[m[32m              onClick={() => navigate(`/public-property/${companySlug}`)}[m
+[32m+[m[32m              style={outlineButtonStyle}[m
+[32m+[m[32m            >[m
+[32m+[m[32m              <ArrowLeft className="h-4 w-4 sm:mr-2" />[m
+[32m+[m[32m              <span className="hidden sm:inline">Lista de Imóveis</span>[m
+[32m+[m[32m            </Button>[m
+[32m+[m[32m            <Button[m
+[32m+[m[32m              variant="outline"[m
+[32m+[m[32m              size="icon"[m
+[32m+[m[32m              className="sm:hidden"[m
+               onClick={() => navigate(`/public-property/${companySlug}`)}[m
+[32m+[m[32m              title="Lista de Imóveis"[m
+[32m+[m[32m              style={outlineButtonStyle}[m
+[32m+[m[32m            >[m
+[32m+[m[32m              <ArrowLeft className="h-4 w-4" />[m
+[32m+[m[32m            </Button>[m
+[32m+[m[32m            <Button[m
+[32m+[m[32m              variant="outline"[m
+[32m+[m[32m              size="icon"[m
+[32m+[m[32m              className="sm:hidden"[m
+[32m+[m[32m              onClick={() => printProperties({ properties: [property], company, showFullAddress: false })}[m
+[32m+[m[32m              title="Imprimir"[m
+[32m+[m[32m              style={outlineButtonStyle}[m
+             >[m
+[31m-              <ArrowLeft className="h-4 w-4 mr-2" />[m
+[31m-              Voltar[m
+[32m+[m[32m              <Printer className="h-4 w-4" />[m
+             </Button>[m
+             <Button[m
+               variant="outline"[m
+               size="sm"[m
+[32m+[m[32m              className="hidden sm:flex"[m
+               onClick={() => printProperties({ properties: [property], company, showFullAddress: false })}[m
+[32m+[m[32m              style={outlineButtonStyle}[m
+             >[m
+[31m-              <Printer className="h-4 w-4 mr-2" />[m
+[31m-              Imprimir[m
+[32m+[m[32m              <Printer className="h-4 w-4 sm:mr-2" />[m
+[32m+[m[32m              <span className="hidden sm:inline">Imprimir</span>[m
+             </Button>[m
+             <Button[m
+               size="sm"[m
+[32m+[m[32m              className="text-xs sm:text-sm px-2 sm:px-4"[m
+               onClick={() => setShowContactForm(true)}[m
+[31m-              style={{ backgroundColor: primaryColor }}[m
+[32m+[m[32m              style={solidButtonStyle}[m
+             >[m
+[31m-              <Mail className="h-4 w-4 mr-2" />[m
+[31m-              Entrar em Contato[m
+[32m+[m[32m              <Mail className="h-4 w-4 sm:mr-2" />[m
+[32m+[m[32m              <span className="hidden sm:inline">Contato</span>[m
+             </Button>[m
+           </div>[m
+         </div>[m
+       </header>[m
+ [m
+       {/* Main Content */}[m
+[31m-      <main className="container mx-auto px-4 py-8">[m
+[32m+[m[32m      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-full">[m
+         {/* Galeria de Fotos em Mosaico */}[m
+[31m-        <Card className="mb-8 overflow-hidden">[m
+[32m+[m[32m        <Card className="mb-6 sm:mb-8 overflow-hidden">[m
+           <CardContent className="p-0">[m
+             {sortedImages.length > 0 ? ([m
+[31m-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 h-[400px] lg:h-[600px]">[m
+[32m+[m[32m              <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">[m
+                 {/* Foto Principal (Esquerda - 3/4) */}[m
+[31m-                <div className="lg:col-span-3 relative group overflow-hidden bg-gray-200 rounded-l-lg">[m
+[32m+[m[32m                <div className="lg:col-span-3 relative group overflow-hidden bg-gray-200 rounded-lg lg:rounded-l-lg lg:rounded-r-none flex items-center justify-center" style={{ maxHeight: '520px', minHeight: '220px' }}>[m
+                   <img[m
+                     src={sortedImages[currentMainImage]?.url}[m
+                     alt="Foto Principal"[m
+[31m-                    className="w-full h-full object-cover transition-all duration-500"[m
+[32m+[m[32m                    className="max-w-full max-h-[520px] object-contain transition-all duration-500"[m
+                   />[m
+                   <button[m
+                     onClick={() => handleImageFullscreen(currentMainImage)}[m
+[31m-                    className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"[m
+[32m+[m[32m                    className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"[m
+                     title="Ver em tela cheia"[m
+                   >[m
+[31m-                    <Maximize2 className="h-5 w-5" />[m
+[32m+[m[32m                    <Maximize2 className="h-4 w-4 sm:h-5 sm:w-5" />[m
+                   </button>[m
+                   {/* Indicador de foto atual */}[m
+[31m-                  <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">[m
+[32m+[m[32m                  <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 bg-black/50 text-white px-2 py-1 sm:px-3 rounded-full text-xs sm:text-sm">[m
+                     {currentMainImage + 1} / {sortedImages.length}[m
+                   </div>[m
+               </div>[m
+ [m
+                 {/* Miniaturas (Direita - 1/4) */}[m
+[31m-                <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto">[m
+[32m+[m[32m                <div className="hidden lg:flex flex-col gap-2 overflow-y-auto">[m
+                   {sortedImages.slice(0, 4).map((image: any, index: number) => ([m
+                     <button[m
+                       key={index}[m
+                       onClick={() => handleThumbnailClick(index)}[m
+[31m-                      className={`relative flex-shrink-0 w-24 h-24 lg:w-full lg:h-[calc((100%-0.75rem)/4)] overflow-hidden rounded-lg cursor-pointer transition-all ${[m
+[32m+[m[32m                      className={`relative w-full h-[calc((100%-0.75rem)/4)] overflow-hidden rounded-lg cursor-pointer transition-all ${[m
+                         currentMainImage === index [m
+                           ? 'ring-4 ring-offset-2 scale-95' [m
+                           : 'hover:scale-105 opacity-80 hover:opacity-100'[m
+[36m@@ -266,7 +329,7 @@[m [mexport default function PublicPropertyView() {[m
+                   {sortedImages.length > 4 && ([m
+                     <button[m
+                       onClick={() => handleImageFullscreen(0)}[m
+[31m-                      className="relative flex-shrink-0 w-24 h-24 lg:w-full lg:h-[calc((100%-0.75rem)/4)] overflow-hidden rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-all"[m
+[32m+[m[32m                      className="relative w-full h-[calc((100%-0.75rem)/4)] overflow-hidden rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-all"[m
+                     >[m
+                       <div className="w-full h-full flex flex-col items-center justify-center text-white">[m
+                         <Maximize2 className="h-6 w-6 mb-1" />[m
+[36m@@ -275,12 +338,41 @@[m [mexport default function PublicPropertyView() {[m
+                     </button>[m
+                   )}[m
+                 </div>[m
+[32m+[m[32m                {/* Miniaturas Mobile - Horizontal Scroll */}[m
+[32m+[m[32m                <div className="lg:hidden flex flex-row gap-2 overflow-x-auto pb-2 -mx-2 px-2">[m
+[32m+[m[32m                  {sortedImages.map((image: any, index: number) => ([m
+[32m+[m[32m                    <button[m
+[32m+[m[32m                      key={index}[m
+[32m+[m[32m                      onClick={() => handleThumbnailClick(index)}[m
+[32m+[m[32m                      className={`relative flex-shrink-0 w-20 h-20 overflow-hidden rounded-lg cursor-pointer transition-all ${[m
+[32m+[m[32m                        currentMainImage === index[m[41m [m
+[32m+[m[32m                          ? 'ring-2 ring-offset-2'[m[41m [m
+[32m+[m[32m                          : 'opacity-70 hover:opacity-100'[m
+[32m+[m[32m                      }`}[m
+[32m+[m[32m                      style={{[m[41m [m
+[32m+[m[32m                        ringColor: currentMainImage === index ? primaryColor : 'transparent'[m[41m [m
+[32m+[m[32m                      }}[m
+[32m+[m[32m                    >[m
+[32m+[m[32m                      <img[m
+[32m+[m[32m                        src={image.url}[m
+[32m+[m[32m                        alt={`Miniatura ${index + 1}`}[m
+[32m+[m[32m                        className="w-full h-full object-cover"[m
+[32m+[m[32m                      />[m
+[32m+[m[32m                      {currentMainImage === index && ([m
+[32m+[m[32m                        <div[m[41m [m
+[32m+[m[32m                          className="absolute inset-0 bg-black/20 border-2"[m
+[32m+[m[32m                          style={{ borderColor: primaryColor }}[m
+[32m+[m[32m                        />[m
+[32m+[m[32m                      )}[m
+[32m+[m[32m                    </button>[m
+[32m+[m[32m                  ))}[m
+[32m+[m[32m                </div>[m
+               </div>[m
+             ) : ([m
+[31m-              <div className="h-[400px] flex items-center justify-center text-gray-400 bg-gray-100">[m
+[32m+[m[32m              <div className="h-[300px] sm:h-[400px] flex items-center justify-center text-gray-400 bg-gray-100">[m
+                 <div className="text-center">[m
+[31m-                  <Home className="h-16 w-16 mx-auto mb-4 text-gray-300" />[m
+[31m-                  <p>Sem fotos disponíveis</p>[m
+[32m+[m[32m                  <Home className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-gray-300" />[m
+[32m+[m[32m                  <p className="text-sm sm:text-base">Sem fotos disponíveis</p>[m
+                   </div>[m
+                   </div>[m
+                 )}[m
+[36m@@ -288,32 +380,34 @@[m [mexport default function PublicPropertyView() {[m
+         </Card>[m
+ [m
+         {/* Informações Principais */}[m
+[31m-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">[m
+[31m-          <div className="lg:col-span-2 space-y-6">[m
+[32m+[m[32m        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">[m
+[32m+[m[32m          <div className="lg:col-span-2 space-y-4 sm:space-y-6">[m
+             {/* Título e Preço */}[m
+             <Card>[m
+[31m-              <CardContent className="p-6">[m
+[31m-                <div className="flex items-start justify-between mb-4">[m
+[31m-                  <d

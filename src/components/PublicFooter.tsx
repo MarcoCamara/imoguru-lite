@@ -32,54 +32,53 @@ export default function PublicFooter({
 }: PublicFooterProps) {
   return (
     <footer 
-      className="w-full py-6 px-4 md:px-8 mt-12"
+      className="w-full py-4 sm:py-6 px-3 sm:px-4 md:px-8 mt-8 sm:mt-12 overflow-x-hidden"
       style={{ backgroundColor: primaryColor }}
     >
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-          {/* Logo e Nome da Empresa */}
-          <div className="flex flex-col items-center md:items-start space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 items-start">
+          {/* Logo da Empresa */}
+          <div className="flex flex-col items-center sm:items-start space-y-2 sm:space-y-3">
             {companyLogo && (
               <img 
                 src={companyLogo} 
                 alt={companyName}
-                className="h-12 w-auto object-contain"
+                className="h-10 sm:h-12 w-auto object-contain max-w-[150px] sm:max-w-none"
               />
             )}
-            <h3 className="text-white font-bold text-lg">{companyName}</h3>
           </div>
 
           {/* Informações de Contato */}
-          <div className="flex flex-col space-y-3 text-center md:text-left">
-            <h4 className="text-white font-semibold text-base mb-2">Contato</h4>
+          <div className="flex flex-col space-y-2 sm:space-y-3 text-center sm:text-left">
+            <h4 className="hidden sm:block text-white font-semibold text-sm sm:text-base mb-1 sm:mb-2">Contato</h4>
             
             {companyPhone && (
               <a 
                 href={`tel:${companyPhone.replace(/\D/g, '')}`}
-                className="flex items-center justify-center md:justify-start space-x-2 text-white hover:text-gray-200 transition-colors"
+                className="flex items-center justify-center sm:justify-start space-x-2 text-white hover:text-gray-200 transition-colors text-sm sm:text-base break-words"
               >
-                <Phone className="h-4 w-4" />
-                <span className="text-sm">{companyPhone}</span>
+                <Phone className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="break-all">{companyPhone}</span>
               </a>
             )}
             
             {companyEmail && (
               <a 
                 href={`mailto:${companyEmail}`}
-                className="flex items-center justify-center md:justify-start space-x-2 text-white hover:text-gray-200 transition-colors"
+                className="flex items-center justify-center sm:justify-start space-x-2 text-white hover:text-gray-200 transition-colors text-xs sm:text-sm break-words"
               >
-                <Mail className="h-4 w-4" />
-                <span className="text-sm">{companyEmail}</span>
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="break-all">{companyEmail}</span>
               </a>
             )}
             
             {(companyAddress || companyCity) && (
-              <div className="flex items-start justify-center md:justify-start space-x-2 text-white">
-                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  {companyAddress && <div>{companyAddress}</div>}
+              <div className="flex items-start justify-center sm:justify-start space-x-2 text-white text-xs sm:text-sm">
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                <div className="break-words flex flex-col">
+                  {companyAddress && <span>{companyAddress}</span>}
                   {(companyCity || companyState) && (
-                    <div>{companyCity}{companyCity && companyState && ' - '}{companyState}</div>
+                    <span>{companyCity}{companyCity && companyState && ' - '}{companyState}</span>
                   )}
                 </div>
               </div>
@@ -87,9 +86,9 @@ export default function PublicFooter({
           </div>
 
           {/* Redes Sociais */}
-          <div className="flex flex-col items-center md:items-end space-y-3">
-            <h4 className="text-white font-semibold text-base mb-2">Redes Sociais</h4>
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col items-center sm:items-center md:items-end space-y-2 sm:space-y-3">
+            <h4 className="text-white font-semibold text-sm sm:text-base mb-1 sm:mb-2">Redes Sociais</h4>
+            <div className="flex items-center space-x-3 sm:space-x-4">
               {companyFacebook && (
                 <a
                   href={companyFacebook}
@@ -98,7 +97,7 @@ export default function PublicFooter({
                   className="text-white hover:text-blue-400 transition-colors"
                   title="Facebook"
                 >
-                  <Facebook className="h-6 w-6" />
+                  <Facebook className="h-5 w-5 sm:h-6 sm:w-6" />
                 </a>
               )}
               
@@ -110,7 +109,7 @@ export default function PublicFooter({
                   className="text-white hover:text-pink-400 transition-colors"
                   title="Instagram"
                 >
-                  <Instagram className="h-6 w-6" />
+                  <Instagram className="h-5 w-5 sm:h-6 sm:w-6" />
                 </a>
               )}
               
@@ -122,7 +121,7 @@ export default function PublicFooter({
                   className="text-white hover:text-green-400 transition-colors"
                   title="WhatsApp"
                 >
-                  <FaWhatsapp className="h-6 w-6" />
+                  <FaWhatsapp className="h-5 w-5 sm:h-6 sm:w-6" />
                 </a>
               )}
             </div>
@@ -130,8 +129,8 @@ export default function PublicFooter({
         </div>
 
         {/* Copyright */}
-        <div className="mt-8 pt-6 border-t border-white/20 text-center">
-          <p className="text-white/80 text-sm">
+        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/20 text-center">
+          <p className="text-white/80 text-xs sm:text-sm break-words">
             © {new Date().getFullYear()} {companyName}. Todos os direitos reservados.
           </p>
         </div>

@@ -45,11 +45,50 @@ export const shareViaWebShare = async (title: string, text: string, url: string)
 // Copy text to clipboard
 export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
+    // Verificar se clipboard API está disponível
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      // Fallback para método antigo
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+      } catch (err) {
+        document.body.removeChild(textArea);
+        console.error('Error copying to clipboard (fallback):', err);
+        return false;
+      }
+    }
+    
     await navigator.clipboard.writeText(text);
     return true;
   } catch (error) {
     console.error('Error copying to clipboard:', error);
-    return false;
+    // Tentar fallback
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (fallbackError) {
+      console.error('Error copying to clipboard (fallback):', fallbackError);
+      return false;
+    }
   }
 };
 
@@ -183,7 +222,10 @@ export const formatMessageWithTemplate = async (template: ShareTemplate, propert
     // Placeholders do sistema e da empresa
     app_name: settings.app_name,
     agency_name: company?.name || settings.app_name,
-    property_url: forceHtml ? `<a href="${propertyUrl}">${propertyUrl}</a>` : propertyUrl,
+    // Para WhatsApp: URL em linha separada para ser clicável. Para email: link HTML azul.
+    property_url: forceHtml 
+      ? `<a href="${propertyUrl}" style="color: #2563eb; text-decoration: underline;">${propertyUrl}</a>` 
+      : `\n\n${propertyUrl}\n`, // Separar URL em linha própria para WhatsApp reconhecer como link clicável
     current_date: currentDate,
     line_break: forceHtml ? '<br><br>' : '\n',
     
@@ -247,15 +289,50 @@ export const getPropertyImages = (property: any, maxImages: number = 5): string[
   return sortedImages.slice(0, maxImages).map(img => img.url);
 };
 
+// Detectar se é dispositivo móvel
+const isMobileDevice = (): boolean => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (window.innerWidth <= 768);
+};
+
 export const shareToWhatsApp = async (message: string, images: string[]) => {
   try {
+    // Garantir que a URL esteja em formato completo e clicável
+    // WhatsApp reconhece URLs automaticamente se estiverem em formato http:// ou https://
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const urlMatches = message.match(urlPattern);
+    
+    // Se não houver URL no formato correto, tentar encontrar e corrigir
+    if (!urlMatches || urlMatches.length === 0) {
+      // Tentar encontrar URLs sem protocolo e adicionar https://
+      const urlWithoutProtocol = message.match(/(?:www\.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}[^\s]*/g);
+      if (urlWithoutProtocol) {
+        urlWithoutProtocol.forEach(url => {
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            message = message.replace(url, `https://${url}`);
+          }
+        });
+      }
+    }
+    
     // Copiar mensagem para clipboard
-    await navigator.clipboard.writeText(message);
+    try {
+      await navigator.clipboard.writeText(message);
+    } catch (clipError) {
+      console.warn('Não foi possível copiar para clipboard:', clipError);
+    }
     
     // Abrir WhatsApp Web ou App
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
+    
+    // Em dispositivos móveis, usar window.location.href para abrir o app nativo
+    // Em desktop, usar window.open para abrir em nova aba
+    if (isMobileDevice()) {
+      window.location.href = whatsappUrl;
+    } else {
+      window.open(whatsappUrl, '_blank');
+    }
     
     return true;
   } catch (error) {
@@ -266,6 +343,17 @@ export const shareToWhatsApp = async (message: string, images: string[]) => {
 
 export const shareToEmail = async (property: any, htmlMessage: string, images: string[], systemSettings?: any) => {
   try {
+    // Garantir que todas as URLs no HTML estejam como links clicáveis e azuis
+    // Substituir URLs simples por links HTML
+    const urlPattern = /(https?:\/\/[^\s<]+)/g;
+    htmlMessage = htmlMessage.replace(urlPattern, (url) => {
+      // Se já está dentro de uma tag <a>, não substituir
+      if (url.includes('<a') || url.includes('</a>')) {
+        return url;
+      }
+      return `<a href="${url}" style="color: #2563eb; text-decoration: underline;">${url}</a>`;
+    });
+    
     // Criar email HTML completo com formatação
     const htmlEmail = `<!DOCTYPE html>
 <html>
@@ -279,6 +367,9 @@ export const shareToEmail = async (property: any, htmlMessage: string, images: s
     .photo-grid img { width: 100%; height: auto; border-radius: 8px; object-fit: cover; aspect-ratio: 1/1; }
     h2, h3 { color: #2563eb; }
     .property-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    a { color: #2563eb !important; text-decoration: underline !important; }
+    a:visited { color: #7c3aed !important; }
+    a:hover { color: #1d4ed8 !important; text-decoration: underline !important; }
   </style>
 </head>
 <body>

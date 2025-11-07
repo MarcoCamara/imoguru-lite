@@ -239,6 +239,9 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
       
       const propertyUrl = `${window.location.origin}/public-property/${company?.slug || 'company'}/property/${prop.id}`;
       
+      // Garantir que a URL seja clicável no WhatsApp - enviar em formato que WhatsApp reconhece
+      const whatsappMessage = `Quero compartilhar este imóvel com você:\n\n${propertyUrl}`;
+      
       // Copiar para área de transferência
       await copyToClipboard(propertyUrl);
       
@@ -246,7 +249,8 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
       let socialUrl = '';
       switch (platform) {
         case 'whatsapp':
-          socialUrl = `https://wa.me/?text=${encodeURIComponent(propertyUrl)}`;
+          // WhatsApp reconhece URLs automaticamente quando estão em linha própria após quebra de linha
+          socialUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
           break;
         case 'facebook':
           socialUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(propertyUrl)}`;
@@ -464,10 +468,10 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl w-[95vw] sm:w-[90vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
-          <DialogTitle>Compartilhar Imóvel</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Compartilhar Imóvel</DialogTitle>
+          <DialogDescription className="text-sm">
             Selecione as plataformas e templates para compartilhar este imóvel
           </DialogDescription>
         </DialogHeader>
@@ -479,30 +483,31 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
         ) : (
           <>
             {/* Seção de Compartilhamento Direto */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {Object.entries(platformConfig).map(([platform, config]) => {
                 const Icon = config.icon;
                 const platformTemplates = templates.filter(t => t.platform === platform);
 
                 return (
-                  <Card key={platform} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                  <Card key={platform} className="p-3 sm:p-4 overflow-x-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
                         <Checkbox
                           id={platform}
                           checked={selectedPlatforms.includes(platform as SharePlatform)}
                           onCheckedChange={() => togglePlatform(platform as SharePlatform)}
+                          className="flex-shrink-0"
                         />
                         <Label
                           htmlFor={platform}
-                          className="flex items-center gap-2 cursor-pointer flex-1"
+                          className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
                         >
-                          <Icon className={`h-6 w-6 ${config.color}`} />
-                          <h4 className="font-semibold">{config.label}</h4>
+                          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${config.color} flex-shrink-0`} />
+                          <h4 className="font-semibold text-sm sm:text-base truncate">{config.label}</h4>
                         </Label>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {/* Seletor de Template (sempre visível) */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
+                        {/* Seletor de Template */}
                         {platformTemplates.length > 0 && (
                           <Select
                             value={selectedTemplateForPlatform[platform as SharePlatform]}
@@ -510,61 +515,71 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
                               setSelectedTemplateForPlatform(prev => ({ ...prev, [platform]: value }))
                             }
                           >
-                            <SelectTrigger className="w-full sm:w-[200px]">
-                              <SelectValue placeholder="Selecionar Template" />
+                            <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm">
+                              <SelectValue placeholder="Template" />
                             </SelectTrigger>
                             <SelectContent>
                               {platformTemplates.map(tpl => (
-                                <SelectItem key={tpl.id} value={tpl.id}>{tpl.name}</SelectItem>
+                                <SelectItem key={tpl.id} value={tpl.id} className="text-xs sm:text-sm">{tpl.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         )}
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleCopyLink(platform as SharePlatform)}
-                          title="Copiar Link da Página Pública"
-                        >
-                          <Link2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleExport(platform as SharePlatform, 'jpg')}
-                          disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
-                          title="Exportar como JPG"
-                        >
-                          <FileImage className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleExport(platform as SharePlatform, 'pdf')}
-                          disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
-                          title="Exportar como PDF"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                        {/* Botões de ação - Mobile: grid 2x2, Desktop: linha */}
+                        <div className="grid grid-cols-2 sm:flex gap-1.5 sm:gap-2 w-full sm:w-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs sm:text-sm px-2 sm:px-3"
+                            onClick={() => handleCopyLink(platform as SharePlatform)}
+                            title="Copiar Link"
+                          >
+                            <Link2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Link</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs sm:text-sm px-2 sm:px-3"
+                            onClick={() => handleExport(platform as SharePlatform, 'jpg')}
+                            disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
+                            title="Exportar JPG"
+                          >
+                            <FileImage className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">JPG</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs sm:text-sm px-2 sm:px-3"
+                            onClick={() => handleExport(platform as SharePlatform, 'pdf')}
+                            disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
+                            title="Exportar PDF"
+                          >
+                            <FileText className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">PDF</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="text-xs sm:text-sm px-2 sm:px-3"
+                            onClick={() => handleShareLink(platform as SharePlatform)}
+                            disabled={loadingPlatform !== null}
+                            title="Compartilhar link"
+                          >
+                            {loadingPlatform === platform ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1 animate-spin" /> : <span className="sm:mr-1">🔗</span>}
+                            <span className="hidden sm:inline">Link</span>
+                          </Button>
+                        </div>
                         <Button
                           size="sm"
-                          onClick={() => handleShareLink(platform as SharePlatform)}
-                          disabled={loadingPlatform !== null}
-                          title="Compartilhar apenas o link da página pública"
-                          className="flex-1"
-                        >
-                          {loadingPlatform === platform ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <>🔗 </>}
-                          Link
-                        </Button>
-                        <Button
-                          size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4"
                           onClick={() => handleShare(platform as SharePlatform, selectedTemplateForPlatform[platform as SharePlatform])}
                           disabled={loadingPlatform !== null || !selectedTemplateForPlatform[platform as SharePlatform]}
-                          title="Compartilhar com template formatado"
-                          className="flex-1"
+                          title="Compartilhar com template"
                         >
-                          {loadingPlatform === platform && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Template
+                          {loadingPlatform === platform && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 animate-spin" />}
+                          <span className="hidden sm:inline">Template</span>
+                          <span className="sm:hidden">Enviar</span>
                         </Button>
                       </div>
                     </div>
@@ -574,7 +589,7 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
             </div>
             
             <div className="flex justify-end pt-4 gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="text-sm sm:text-base">
                 Fechar
               </Button>
             </div>

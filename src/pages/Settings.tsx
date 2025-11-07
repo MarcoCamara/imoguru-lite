@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import { ArrowLeft, Save, Building2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BrandingPreview from '@/components/BrandingPreview';
 import CompanyManagement from '@/components/CompanyManagement';
@@ -35,6 +35,7 @@ interface SystemSettings {
   show_dashboard_charts?: boolean;
   font_family?: string; // Novo campo
   font_size?: number; // Novo campo
+  show_version_in_header?: boolean; // Flag para exibir/ocultar versão no cabeçalho
 }
 
 export default function Settings() {
@@ -43,6 +44,10 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState('system');
+  
+  // Ordem das abas de configurações
+  const settingsTabsOrder = ['system', 'companies', 'users', 'apis', 'advanced'];
   const [settings, setSettings] = useState<SystemSettings>({
     app_name: 'LITE 1.0',
     system_display_name: 'ImoGuru Rose Real State',
@@ -60,6 +65,7 @@ export default function Settings() {
     show_dashboard_charts: true,
     font_family: 'Arial',
     font_size: 24,
+    show_version_in_header: true,
   });
 
   useEffect(() => {
@@ -107,6 +113,7 @@ export default function Settings() {
           'show_dashboard_charts',
           'font_family',
           'font_size',
+          'show_version_in_header',
         ]);
 
       if (error) throw error;
@@ -255,6 +262,25 @@ export default function Settings() {
     }
   };
 
+  const goToNextTab = () => {
+    const currentIndex = settingsTabsOrder.indexOf(activeTab);
+    if (currentIndex < settingsTabsOrder.length - 1) {
+      const nextTab = settingsTabsOrder[currentIndex + 1];
+      setActiveTab(nextTab);
+    }
+  };
+
+  const goToPreviousTab = () => {
+    const currentIndex = settingsTabsOrder.indexOf(activeTab);
+    if (currentIndex > 0) {
+      const previousTab = settingsTabsOrder[currentIndex - 1];
+      setActiveTab(previousTab);
+    }
+  };
+
+  const isFirstTab = () => activeTab === settingsTabsOrder[0];
+  const isLastTab = () => activeTab === settingsTabsOrder[settingsTabsOrder.length - 1];
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -276,15 +302,17 @@ export default function Settings() {
           </div>
         </div>
 
-        <Tabs defaultValue="system" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* TabsList com 5 itens: Sistema, Empresas, Usuários, APIs, Avançado */}
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="system">Sistema</TabsTrigger>
-            <TabsTrigger value="companies">Empresas</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="apis">APIs</TabsTrigger>
-            <TabsTrigger value="advanced">Avançado</TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto overflow-y-hidden pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
+            <TabsList className="inline-flex h-10 w-max min-w-full sm:w-full sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1 sm:gap-2 flex-nowrap sm:flex-wrap">
+              <TabsTrigger value="system" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0">Sistema</TabsTrigger>
+              <TabsTrigger value="companies" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0">Empresas</TabsTrigger>
+              <TabsTrigger value="users" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0">Usuários</TabsTrigger>
+              <TabsTrigger value="apis" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0">APIs</TabsTrigger>
+              <TabsTrigger value="advanced" className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0">Avançado</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="system" className="space-y-6">
           <Card>
@@ -319,6 +347,21 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Ex: LITE 1.0, Enterprise Edition
                 </p>
+              </div>
+
+              {/* Flag para exibir/ocultar versão no cabeçalho */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="show_version_in_header">Exibir Versão no Cabeçalho</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Controla se a versão do sistema aparece no cabeçalho de todas as páginas
+                  </p>
+                </div>
+                <Switch
+                  id="show_version_in_header"
+                  checked={settings.show_version_in_header ?? true}
+                  onCheckedChange={(checked) => setSettings({ ...settings, show_version_in_header: checked })}
+                />
               </div>
 
               {/* Font Family Selection */}
@@ -639,24 +682,86 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving || uploading}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Salvando...' : 'Salvar Configurações'}
+          <div className="flex flex-wrap justify-center sm:justify-between gap-2 mt-6">
+            <div className="flex gap-2">
+              <Button onClick={goToPreviousTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isFirstTab()}>
+                <ChevronLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Aba Anterior</span>
+              </Button>
+              <Button onClick={goToNextTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isLastTab()}>
+                <span className="hidden sm:inline">Próxima Aba</span>
+                <ChevronRight className="h-4 w-4 sm:ml-2" />
+              </Button>
+            </div>
+            <Button onClick={handleSave} disabled={saving || uploading} size="sm" className="text-xs sm:text-sm">
+              <Save className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
+              <span className="sm:hidden">{saving ? '...' : '✓'}</span>
             </Button>
           </div>
           </TabsContent>
 
           <TabsContent value="companies" className="space-y-6">
             <CompanyManagement />
+            <div className="flex flex-wrap justify-center sm:justify-between gap-2 mt-6">
+              <div className="flex gap-2">
+                <Button onClick={goToPreviousTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isFirstTab()}>
+                  <ChevronLeft className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Aba Anterior</span>
+                </Button>
+                <Button onClick={goToNextTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isLastTab()}>
+                  <span className="hidden sm:inline">Próxima Aba</span>
+                  <ChevronRight className="h-4 w-4 sm:ml-2" />
+                </Button>
+              </div>
+              <Button onClick={handleSave} disabled={saving || uploading} size="sm" className="text-xs sm:text-sm">
+                <Save className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
+                <span className="sm:hidden">{saving ? '...' : '✓'}</span>
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
             <UserManagement />
+            <div className="flex flex-wrap justify-center sm:justify-between gap-2 mt-6">
+              <div className="flex gap-2">
+                <Button onClick={goToPreviousTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isFirstTab()}>
+                  <ChevronLeft className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Aba Anterior</span>
+                </Button>
+                <Button onClick={goToNextTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isLastTab()}>
+                  <span className="hidden sm:inline">Próxima Aba</span>
+                  <ChevronRight className="h-4 w-4 sm:ml-2" />
+                </Button>
+              </div>
+              <Button onClick={handleSave} disabled={saving || uploading} size="sm" className="text-xs sm:text-sm">
+                <Save className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
+                <span className="sm:hidden">{saving ? '...' : '✓'}</span>
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="apis" className="space-y-6">
             <ApiKeysManagement />
+            <div className="flex flex-wrap justify-center sm:justify-between gap-2 mt-6">
+              <div className="flex gap-2">
+                <Button onClick={goToPreviousTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isFirstTab()}>
+                  <ChevronLeft className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Aba Anterior</span>
+                </Button>
+                <Button onClick={goToNextTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isLastTab()}>
+                  <span className="hidden sm:inline">Próxima Aba</span>
+                  <ChevronRight className="h-4 w-4 sm:ml-2" />
+                </Button>
+              </div>
+              <Button onClick={handleSave} disabled={saving || uploading} size="sm" className="text-xs sm:text-sm">
+                <Save className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
+                <span className="sm:hidden">{saving ? '...' : '✓'}</span>
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6">
@@ -703,6 +808,19 @@ export default function Settings() {
                 </Button>
               </CardContent>
             </Card>
+            <div className="flex flex-wrap justify-center sm:justify-between gap-2 mt-6">
+              <div className="flex gap-2">
+                <Button onClick={goToPreviousTab} variant="outline" size="sm" className="text-xs sm:text-sm" disabled={isFirstTab()}>
+                  <ChevronLeft className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Aba Anterior</span>
+                </Button>
+              </div>
+              <Button onClick={handleSave} disabled={saving || uploading} size="sm" className="text-xs sm:text-sm">
+                <Save className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
+                <span className="sm:hidden">{saving ? '...' : '✓'}</span>
+              </Button>
+            </div>
           </TabsContent>
 
         </Tabs>

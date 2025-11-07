@@ -58,7 +58,16 @@ export default function Dashboard() {
     show_dashboard_charts: true,
     font_family: 'Arial', // Novo campo
     font_size: 24, // Novo campo
+    show_version_in_header: true,
+    primary_color: '#8b5cf6',
+    secondary_color: '#ec4899',
   });
+
+  const primaryColor = systemSettings.primary_color || '#8b5cf6';
+  const secondaryColor = systemSettings.secondary_color || '#ec4899';
+  const accentGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`;
+  const outlineButtonStyle = { borderColor: primaryColor, borderWidth: '2px', color: primaryColor, background: '#ffffff' };
+  const solidButtonStyle = { backgroundColor: primaryColor, border: 'none', color: '#ffffff' };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -104,7 +113,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop', 'show_dashboard_metrics', 'show_dashboard_charts', 'font_family', 'font_size']); // Incluir novos campos
+        .in('setting_key', ['app_name', 'logo_url', 'logo_size_mobile', 'logo_size_tablet', 'logo_size_desktop', 'show_dashboard_metrics', 'show_dashboard_charts', 'font_family', 'font_size', 'show_version_in_header', 'primary_color', 'secondary_color']); // Incluir novos campos
 
       if (error) throw error;
 
@@ -118,6 +127,9 @@ export default function Dashboard() {
         show_dashboard_charts: true,
         font_family: 'Arial', // Default para novos campos
         font_size: 24, // Default para novos campos
+        show_version_in_header: true, // Default para exibir versão
+        primary_color: '#8b5cf6',
+        secondary_color: '#ec4899',
       };
       data?.forEach((item) => {
         settingsObj[item.setting_key] = item.setting_value;
@@ -556,150 +568,217 @@ export default function Dashboard() {
               ) : (
                 <Building2 className="h-12 w-12 text-primary flex-shrink-0 hidden lg:block" />
               )}
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground"
-                  style={{ fontFamily: systemSettings.font_family, fontSize: `${systemSettings.font_size}px` }}>
-                {systemSettings.app_name}
-              </h1>
+              {systemSettings.show_version_in_header !== false && (
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground"
+                    style={{ fontFamily: systemSettings.font_family, fontSize: `${systemSettings.font_size}px` }}>
+                  {systemSettings.app_name}
+                </h1>
+              )}
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4 md:gap-2">
-              {isAdmin && (
-                <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mr-2">
-                  Administrador
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 md:gap-2">
+              {/* Linha 1: Botões de ação quando há seleção - apenas em mobile */}
+              {selectedProperties.length > 0 && (
+                <div className="flex items-center gap-2 w-full sm:w-auto sm:hidden">
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={handleShareMultiple}
+                    className="w-20 h-9 flex items-center justify-center"
+                    title="Compartilhar imóveis selecionados"
+                    style={solidButtonStyle}
+                  >
+                    <Share2 className="h-4 w-4 text-white" />
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={() => {
+                      const propertiesToPrint = properties.filter(p => selectedProperties.includes(p.id));
+                      printProperties({ properties: propertiesToPrint, showFullAddress: true });
+                    }}
+                    className="w-20 h-9 flex items-center justify-center"
+                    title="Imprimir imóveis selecionados"
+                    style={solidButtonStyle}
+                  >
+                    <Printer className="h-4 w-4 text-white" />
+                  </Button>
                 </div>
               )}
-              {/* Toggle para Agente de IA */}
-              {userCompany && (
-                <Toggle
-                  pressed={aiAgentEnabled}
-                  onPressedChange={handleToggleAiAgent}
-                  aria-label="Toggle Agente de IA"
-                  className="ml-2"
-                  title={aiAgentEnabled ? "Agente de IA Ativo" : "Agente de IA Inativo"}
-                >
-                  <Sparkles className={`h-4 w-4 ${aiAgentEnabled ? 'text-yellow-500' : 'text-gray-400'}`} />
-                </Toggle>
-              )}
-              {/* Botão/Dropdown para Página Pública */}
-              {isAdmin ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" title="Página Pública">
-                      <Globe className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {companies.map((company) => (
-                      <DropdownMenuItem 
-                        key={company.id} 
-                        onClick={() => navigate(`/public-property/${company.slug}`)}
-                      >
-                        {company.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (userCompany && (
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => navigate(`/public-property/${userCompany.slug}`)}
-                  title="Página Pública"
-                >
-                  <Globe className="h-4 w-4" />
-                </Button>
-              ))}
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowFilters(!showFilters)}
-                title="Filtros"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
-              {selectedProperties.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShareMultiple}
-                  title="Compartilhar imóveis selecionados"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Compartilhar ({selectedProperties.length})
-                </Button>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" title="Exportar">
-                    <FileSpreadsheet className="h-4 w-4" />
+              
+              {/* Linha 2: IA, Página Pública, Filtro, Exportar */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start flex-wrap">
+                {isAdmin && (
+                  <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mr-2">
+                    Administrador
+                  </div>
+                )}
+                {/* Toggle para Agente de IA */}
+                {userCompany && (
+                  <Toggle
+                    pressed={aiAgentEnabled}
+                    onPressedChange={handleToggleAiAgent}
+                    aria-label="Toggle Agente de IA"
+                    className="ml-2 sm:ml-0 border-2"
+                    style={{
+                      borderColor: aiAgentEnabled ? secondaryColor : primaryColor,
+                      backgroundColor: aiAgentEnabled ? secondaryColor : '#ffffff',
+                      color: aiAgentEnabled ? '#ffffff' : primaryColor,
+                    }}
+                    title={aiAgentEnabled ? "Agente de IA Ativo" : "Agente de IA Inativo"}
+                  >
+                    <Sparkles className={`h-4 w-4 ${aiAgentEnabled ? 'text-white' : ''}`} style={!aiAgentEnabled ? { color: secondaryColor } : undefined} />
+                  </Toggle>
+                )}
+                {/* Botão/Dropdown para Página Pública */}
+                {isAdmin ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" title="Página Pública" style={outlineButtonStyle}>
+                        <Globe className="h-4 w-4" style={{ color: secondaryColor }} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {companies.map((company) => (
+                        <DropdownMenuItem 
+                          key={company.id} 
+                          onClick={() => navigate(`/public-property/${company.slug}`)}
+                        >
+                          {company.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (userCompany && (
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => navigate(`/public-property/${userCompany.slug}`)}
+                    title="Página Pública"
+                    style={outlineButtonStyle}
+                  >
+                    <Globe className="h-4 w-4" style={{ color: secondaryColor }} />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleExport('csv')}>
-                    Exportar CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                    Exportar Excel (XLSX)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport('json')}>
-                    Exportar JSON
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {selectedProperties.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const propertiesToPrint = properties.filter(p => selectedProperties.includes(p.id));
-                    printProperties({ properties: propertiesToPrint, showFullAddress: true });
-                  }}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Imprimir ({selectedProperties.length})
-                </Button>
-              )}
-              <Button
-                onClick={() => navigate('/property/new')}
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Imóvel
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate('/profile')}
-                title="Meu Perfil"
-              >
-                <User className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowContactRequestsDialog(true)}
-                title="Solicitações de Contato"
-              >
-                <MessageSquareMore className="h-4 w-4" />
-              </Button>
-              {isAdmin && (
+                ))}
+
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => navigate('/settings')}
-                  title="Configurações"
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Filtros"
+                  style={outlineButtonStyle}
                 >
-                  <Settings className="h-4 w-4" />
+                  <Filter className="h-4 w-4" style={{ color: secondaryColor }} />
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" title="Exportar" style={outlineButtonStyle}>
+                      <FileSpreadsheet className="h-4 w-4" style={{ color: secondaryColor }} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleExport('csv')}>
+                      Exportar CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                      Exportar Excel (XLSX)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('json')}>
+                      Exportar JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              {/* Linha 3: Novo Imóvel (sozinho em mobile) */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
+                {/* Botões de ação quando há seleção - apenas em desktop */}
+                {selectedProperties.length > 0 && (
+                  <>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleShareMultiple}
+                      className="hidden sm:flex sm:min-w-[140px]"
+                      title="Compartilhar imóveis selecionados"
+                      style={solidButtonStyle}
+                    >
+                      <Share2 className="h-4 w-4 mr-2 text-white" />
+                      Compartilhar ({selectedProperties.length})
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        const propertiesToPrint = properties.filter(p => selectedProperties.includes(p.id));
+                        printProperties({ properties: propertiesToPrint, showFullAddress: true });
+                      }}
+                      className="hidden sm:flex sm:min-w-[140px]"
+                      title="Imprimir imóveis selecionados"
+                      style={solidButtonStyle}
+                    >
+                      <Printer className="h-4 w-4 mr-2 text-white" />
+                      Imprimir ({selectedProperties.length})
+                    </Button>
+                  </>
+                )}
+                
+                <Button
+                  onClick={() => navigate('/property/new')}
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  style={solidButtonStyle}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Imóvel
+                </Button>
+              </div>
+              
+              {/* Linha 4: Solicitações, Configurações (se admin), Perfil, Sair */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start flex-wrap">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowContactRequestsDialog(true)}
+                  title="Solicitações de Contato"
+                  style={outlineButtonStyle}
+                >
+                  <MessageSquareMore className="h-4 w-4" style={{ color: secondaryColor }} />
+                </Button>
+                
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate('/settings')}
+                    title="Configurações"
+                    style={outlineButtonStyle}
+                  >
+                    <Settings className="h-4 w-4" style={{ color: secondaryColor }} />
+                  </Button>
+                )}
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigate('/profile')}
+                  title="Meu Perfil"
+                  style={outlineButtonStyle}
+                >
+                  <User className="h-4 w-4" style={{ color: secondaryColor }} />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={signOut}
+                  className={!isAdmin ? "w-16 sm:w-auto" : ""}
+                  title="Sair"
+                >
+                  <LogOut className="h-4 w-4 sm:mr-2" style={{ color: secondaryColor }} />
+                  <span className="hidden sm:inline">Sair</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -774,8 +853,9 @@ export default function Dashboard() {
                     size="sm"
                     onClick={() => setViewMode('grid')}
                     className="rounded-r-none"
+                    style={viewMode === 'grid' ? solidButtonStyle : outlineButtonStyle}
                   >
-                    <LayoutGrid className="h-4 w-4 mr-2" />
+                    <LayoutGrid className="h-4 w-4 mr-2" style={{ color: viewMode === 'grid' ? '#ffffff' : secondaryColor }} />
                     Cards
                   </Button>
                   <Button
@@ -783,8 +863,9 @@ export default function Dashboard() {
                     size="sm"
                     onClick={() => setViewMode('list')}
                     className="rounded-l-none"
+                    style={viewMode === 'list' ? solidButtonStyle : outlineButtonStyle}
                   >
-                    <List className="h-4 w-4 mr-2" />
+                    <List className="h-4 w-4 mr-2" style={{ color: viewMode === 'list' ? '#ffffff' : secondaryColor }} />
                     Lista
                   </Button>
                 </div>
@@ -814,6 +895,8 @@ export default function Dashboard() {
                     onArchive={() => handleArchive(property.id)}
                     onDuplicate={() => handleDuplicate(property)}
                     onToggleFeature={handleToggleFeature} // Passa a nova função
+                    primaryColor={primaryColor}
+                    secondaryColor={secondaryColor}
                   />
                 ))}
               </div>
@@ -827,13 +910,18 @@ export default function Dashboard() {
                                      property.purpose === 'locacao' ? 'Locação' : 'Venda/Locação';
 
                   return (
-                    <Card key={property.id} className="hover:shadow-lg transition-shadow">
+                    <Card
+                      key={property.id}
+                      className="hover:shadow-lg transition-shadow"
+                      style={{ border: `3px solid ${selectedProperties.includes(property.id) ? secondaryColor : primaryColor}` }}
+                    >
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 w-full">
                         <input
                           type="checkbox"
                           checked={selectedProperties.includes(property.id)}
                           onChange={() => handleSelectProperty(property.id)}
                           className="h-5 w-5 cursor-pointer flex-shrink-0 mt-1 sm:mt-0"
+                          style={{ accentColor: primaryColor }}
                         />
                         
                         {coverImage && (
@@ -845,22 +933,24 @@ export default function Dashboard() {
                         )}
 
                         <div className="flex-1 min-w-0 w-full sm:w-auto">
-                          <h3 className="font-semibold text-lg truncate">{property.title}</h3>
+                          <h3 className="font-semibold text-lg truncate" style={{ color: secondaryColor }}>
+                            {property.title}
+                          </h3>
                           <p className="text-sm text-muted-foreground">
                             {property.code} • {property.city}, {property.state}
                           </p>
-                          <p className="text-sm mt-1">
+                          <p className="text-sm mt-1 text-muted-foreground flex flex-wrap gap-2">
                             {property.bedrooms} dorm • {property.bathrooms} banh • {property.parking_spaces} vagas
                             {property.total_area && ` • ${property.total_area}m²`}
                           </p>
                         </div>
 
                         <div className="flex flex-col items-end gap-2 mt-2 sm:mt-0 sm:ml-auto w-full sm:w-auto">
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                          <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: primaryColor, color: '#fff' }}>
                             {purposeText}
                           </span>
                           {price && (
-                            <span className="font-bold text-lg whitespace-nowrap">
+                            <span className="font-bold text-lg whitespace-nowrap" style={{ color: primaryColor }}>
                               R$ {price.toLocaleString('pt-BR')}
                             </span>
                           )}
@@ -868,20 +958,22 @@ export default function Dashboard() {
 
                         <div className="flex gap-1 mt-2 sm:mt-0 sm:ml-2 flex-shrink-0">
                           <Button
-                            variant="outline"
                             size="icon"
+                            variant="outline"
                             onClick={() => navigate(`/property/${property.id}`)}
                             title="Editar"
+                            style={{ borderColor: primaryColor, borderWidth: '2px', color: primaryColor, background: '#fff' }}
                           >
-                            <Settings className="h-4 w-4" />
+                            <Settings className="h-4 w-4" style={{ color: secondaryColor }} />
                           </Button>
                           <Button
-                            variant="outline"
                             size="icon"
+                            variant="outline"
                             onClick={() => handleShareSingle(property)}
                             title="Compartilhar"
+                            style={{ borderColor: primaryColor, borderWidth: '2px', color: primaryColor, background: '#fff' }}
                           >
-                            <Share2 className="h-4 w-4" />
+                            <Share2 className="h-4 w-4" style={{ color: secondaryColor }} />
                           </Button>
                         </div>
                       </div>

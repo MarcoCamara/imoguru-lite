@@ -532,38 +532,40 @@ export default function CompanyManagement() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
           <div>
-            <CardTitle>Empresas</CardTitle>
-            <CardDescription>Gerencie as empresas do sistema</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Empresas</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Gerencie as empresas do sistema</CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Empresa
+              <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nova Empresa</span>
+                <span className="sm:hidden">Nova</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Criar Nova Empresa</DialogTitle>
-                <DialogDescription>
+            <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl max-w-full max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+              <DialogHeader className="pb-2 sm:pb-4">
+                <DialogTitle className="text-base sm:text-lg md:text-xl">Criar Nova Empresa</DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm">
                   Adicione uma nova empresa ao sistema
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-3 sm:space-y-4 py-2 sm:py-4 max-h-[60vh] overflow-y-auto">
                 <div>
-                  <Label htmlFor="company_name">Nome da Empresa *</Label>
+                  <Label htmlFor="company_name" className="text-xs sm:text-sm">Nome da Empresa *</Label>
                   <Input
                     id="company_name"
                     value={newCompany.name}
                     onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                     placeholder="Digite o nome da empresa"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="company_logo">Logotipo</Label>
+                  <Label htmlFor="company_logo" className="text-xs sm:text-sm">Logotipo</Label>
                   <Input
                     id="company_logo"
                     type="file"
@@ -582,171 +584,187 @@ export default function CompanyManagement() {
                         setLogoFile(file);
                       }
                     }}
+                    className="text-xs sm:text-sm"
                   />
                   <p className="text-xs text-muted-foreground mt-1">Tamanho máximo: 2MB</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="company_cnpj">CNPJ</Label>
+                    <Label htmlFor="company_cnpj" className="text-xs sm:text-sm">CNPJ</Label>
                     <Input
                       id="company_cnpj"
                       value={newCompany.cnpj}
                       onChange={(e) => setNewCompany({ ...newCompany, cnpj: formatCNPJ(e.target.value) })}
                       placeholder="00.000.000/0000-00"
                       maxLength={18}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company_website_domain">Website/Domínio</Label>
+                    <Label htmlFor="company_website_domain" className="text-xs sm:text-sm">Website/Domínio</Label>
                     <Input
                       id="company_website_domain"
                       value={newCompany.website_domain}
                       onChange={(e) => setNewCompany({ ...newCompany, website_domain: e.target.value })}
                       placeholder="https://exemplo.com.br"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="company_primary_color">Cor Primária</Label>
+                    <Label htmlFor="company_primary_color" className="text-xs sm:text-sm">Cor Primária</Label>
                     <div className="flex gap-2">
                       <Input
                         id="company_primary_color"
                         type="color"
                         value={newCompany.primary_color}
                         onChange={(e) => setNewCompany({ ...newCompany, primary_color: e.target.value })}
-                        className="w-20 h-10"
+                        className="w-16 sm:w-20 h-8 sm:h-10 flex-shrink-0"
                       />
                       <Input
                         value={newCompany.primary_color}
                         onChange={(e) => setNewCompany({ ...newCompany, primary_color: e.target.value })}
                         placeholder="#8b5cf6"
+                        className="text-sm sm:text-base"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="company_secondary_color">Cor Secundária</Label>
+                    <Label htmlFor="company_secondary_color" className="text-xs sm:text-sm">Cor Secundária</Label>
                     <div className="flex gap-2">
                       <Input
                         id="company_secondary_color"
                         type="color"
                         value={newCompany.secondary_color}
                         onChange={(e) => setNewCompany({ ...newCompany, secondary_color: e.target.value })}
-                        className="w-20 h-10"
+                        className="w-16 sm:w-20 h-8 sm:h-10 flex-shrink-0"
                       />
                       <Input
                         value={newCompany.secondary_color}
                         onChange={(e) => setNewCompany({ ...newCompany, secondary_color: e.target.value })}
                         placeholder="#3b82f6"
+                        className="text-sm sm:text-base"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="company_phone">Telefone</Label>
+                    <Label htmlFor="company_phone" className="text-xs sm:text-sm">Telefone</Label>
                     <Input
                       id="company_phone"
                       value={newCompany.phone}
                       onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
                       placeholder="(00) 0000-0000"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company_whatsapp">WhatsApp</Label>
+                    <Label htmlFor="company_whatsapp" className="text-xs sm:text-sm">WhatsApp</Label>
                     <Input
                       id="company_whatsapp"
                       value={newCompany.whatsapp}
                       onChange={(e) => setNewCompany({ ...newCompany, whatsapp: e.target.value })}
                       placeholder="(00) 00000-0000"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="company_facebook">Facebook</Label>
+                    <Label htmlFor="company_facebook" className="text-xs sm:text-sm">Facebook</Label>
                     <Input
                       id="company_facebook"
                       value={newCompany.facebook}
                       onChange={(e) => setNewCompany({ ...newCompany, facebook: e.target.value })}
                       placeholder="URL do Facebook"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company_instagram">Instagram</Label>
+                    <Label htmlFor="company_instagram" className="text-xs sm:text-sm">Instagram</Label>
                     <Input
                       id="company_instagram"
                       value={newCompany.instagram}
                       onChange={(e) => setNewCompany({ ...newCompany, instagram: e.target.value })}
                       placeholder="@usuario"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="company_cep">CEP</Label>
+                  <Label htmlFor="company_cep" className="text-xs sm:text-sm">CEP</Label>
                   <Input
                     id="company_cep"
                     value={newCompany.cep}
                     onChange={(e) => handleCepChange(e.target.value)}
                     placeholder="00000-000"
+                    className="text-sm sm:text-base"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="company_street">Rua</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="col-span-1 sm:col-span-2">
+                    <Label htmlFor="company_street" className="text-xs sm:text-sm">Rua</Label>
                     <Input
                       id="company_street"
                       value={newCompany.street}
                       onChange={(e) => setNewCompany({ ...newCompany, street: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company_number">Número</Label>
+                    <Label htmlFor="company_number" className="text-xs sm:text-sm">Número</Label>
                     <Input
                       id="company_number"
                       value={newCompany.number}
                       onChange={(e) => setNewCompany({ ...newCompany, number: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="company_complement">Complemento</Label>
+                  <Label htmlFor="company_complement" className="text-xs sm:text-sm">Complemento</Label>
                   <Input
                     id="company_complement"
                     value={newCompany.complement}
                     onChange={(e) => setNewCompany({ ...newCompany, complement: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="company_neighborhood">Bairro</Label>
+                    <Label htmlFor="company_neighborhood" className="text-xs sm:text-sm">Bairro</Label>
                     <Input
                       id="company_neighborhood"
                       value={newCompany.neighborhood}
                       onChange={(e) => setNewCompany({ ...newCompany, neighborhood: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="company_city">Cidade</Label>
+                    <Label htmlFor="company_city" className="text-xs sm:text-sm">Cidade</Label>
                     <Input
                       id="company_city"
                       value={newCompany.city}
                       onChange={(e) => setNewCompany({ ...newCompany, city: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="company_state">Estado</Label>
+                  <Label htmlFor="company_state" className="text-xs sm:text-sm">Estado</Label>
                   <Input
                     id="company_state"
                     value={newCompany.state}
                     onChange={(e) => setNewCompany({ ...newCompany, state: e.target.value })}
                     placeholder="UF"
                     maxLength={2}
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -759,11 +777,13 @@ export default function CompanyManagement() {
                 </div>
 
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4 sm:pt-6 border-t sm:border-t-0">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
                   Cancelar
                 </Button>
-                <Button onClick={handleCreateCompany}>Criar Empresa</Button>
+                <Button onClick={handleCreateCompany} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                  Criar Empresa
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -779,10 +799,10 @@ export default function CompanyManagement() {
             {companies.map((company) => (
               <div
                 key={company.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg gap-3 sm:gap-4"
               >
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden">
+                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-dashed rounded-md flex items-center justify-center bg-muted overflow-hidden flex-shrink-0">
                     {company.logo_url ? (
                       <img
                         src={company.logo_url}
@@ -790,51 +810,54 @@ export default function CompanyManagement() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <Building2 className="h-8 w-8 text-muted-foreground" />
+                      <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-semibold">{company.name}</h3>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm sm:text-base truncate">{company.name}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Criada em {new Date(company.created_at).toLocaleDateString()}
                     </p>
                     {company.cnpj && (
-                      <p className="text-xs text-muted-foreground">CNPJ: {company.cnpj}</p>
+                      <p className="text-xs text-muted-foreground truncate">CNPJ: {company.cnpj}</p>
                     )}
                   </div>
                   {company.archived && (
-                    <Badge variant="outline" className="bg-muted">
+                    <Badge variant="outline" className="bg-muted flex-shrink-0 text-xs">
                       Arquivada
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end sm:justify-start flex-wrap">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => handleEditCompany(company)}
                     title="Editar empresa"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => handleDuplicateCompany(company)}
                     title="Duplicar empresa"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => handleArchiveCompany(company.id)}
                     title={company.archived ? 'Desarquivar empresa' : 'Arquivar empresa'}
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                   >
                     {company.archived ? (
-                      <ArchiveRestore className="h-4 w-4" />
+                      <ArchiveRestore className="h-3 w-3 sm:h-4 sm:w-4" />
                     ) : (
-                      <Archive className="h-4 w-4" />
+                      <Archive className="h-3 w-3 sm:h-4 sm:w-4" />
                     )}
                   </Button>
                   <Button
@@ -845,16 +868,18 @@ export default function CompanyManagement() {
                       setIsUsersDialogOpen(true);
                     }}
                     title="Visualizar usuários"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                   >
-                    <Users className="h-4 w-4" />
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     variant="destructive"
                     size="icon"
                     onClick={() => handleDeleteCompany(company.id)}
                     title="Deletar empresa"
+                    className="h-8 w-8 sm:h-9 sm:w-9"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>
@@ -865,27 +890,28 @@ export default function CompanyManagement() {
 
       {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Empresa</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl max-w-full max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="text-base sm:text-lg md:text-xl">Editar Empresa</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Atualize os dados da empresa
             </DialogDescription>
           </DialogHeader>
           {editingCompany && (
-            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-3 sm:space-y-4 py-2 sm:py-4 max-h-[60vh] overflow-y-auto">
               <div>
-                <Label htmlFor="edit_company_name">Nome da Empresa *</Label>
+                <Label htmlFor="edit_company_name" className="text-xs sm:text-sm">Nome da Empresa *</Label>
                 <Input
                   id="edit_company_name"
                   value={editingCompany.name}
                   onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })}
                   placeholder="Digite o nome da empresa"
+                  className="text-sm sm:text-base"
                 />
               </div>
               
               <div>
-                <Label htmlFor="edit_company_logo">Logotipo</Label>
+                <Label htmlFor="edit_company_logo" className="text-xs sm:text-sm">Logotipo</Label>
                 <Input
                   id="edit_company_logo"
                   type="file"
@@ -904,181 +930,197 @@ export default function CompanyManagement() {
                       setEditLogoFile(file);
                     }
                   }}
+                  className="text-xs sm:text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Tamanho máximo: 2MB</p>
                 {editingCompany.logo_url && (
                   <div className="mt-2">
-                    <img src={editingCompany.logo_url} alt="Logo atual" className="h-20 object-contain" />
+                    <img src={editingCompany.logo_url} alt="Logo atual" className="h-16 sm:h-20 object-contain" />
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_company_cnpj">CNPJ</Label>
+                  <Label htmlFor="edit_company_cnpj" className="text-xs sm:text-sm">CNPJ</Label>
                   <Input
                     id="edit_company_cnpj"
                     value={editingCompany.cnpj || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, cnpj: formatCNPJ(e.target.value) })}
                     placeholder="00.000.000/0000-00"
                     maxLength={18}
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_website_domain">Website/Domínio</Label>
+                  <Label htmlFor="edit_company_website_domain" className="text-xs sm:text-sm">Website/Domínio</Label>
                   <Input
                     id="edit_company_website_domain"
                     value={editingCompany.website_domain || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, website_domain: e.target.value })}
                     placeholder="https://exemplo.com.br"
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_company_primary_color">Cor Primária</Label>
+                  <Label htmlFor="edit_company_primary_color" className="text-xs sm:text-sm">Cor Primária</Label>
                   <div className="flex gap-2">
                     <Input
                       id="edit_company_primary_color"
                       type="color"
                       value={editingCompany.primary_color || '#8b5cf6'}
                       onChange={(e) => setEditingCompany({ ...editingCompany, primary_color: e.target.value })}
-                      className="w-20 h-10"
+                      className="w-16 sm:w-20 h-8 sm:h-10 flex-shrink-0"
                     />
                     <Input
                       value={editingCompany.primary_color || '#8b5cf6'}
                       onChange={(e) => setEditingCompany({ ...editingCompany, primary_color: e.target.value })}
                       placeholder="#8b5cf6"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_secondary_color">Cor Secundária</Label>
+                  <Label htmlFor="edit_company_secondary_color" className="text-xs sm:text-sm">Cor Secundária</Label>
                   <div className="flex gap-2">
                     <Input
                       id="edit_company_secondary_color"
                       type="color"
                       value={editingCompany.secondary_color || '#3b82f6'}
                       onChange={(e) => setEditingCompany({ ...editingCompany, secondary_color: e.target.value })}
-                      className="w-20 h-10"
+                      className="w-16 sm:w-20 h-8 sm:h-10 flex-shrink-0"
                     />
                     <Input
                       value={editingCompany.secondary_color || '#3b82f6'}
                       onChange={(e) => setEditingCompany({ ...editingCompany, secondary_color: e.target.value })}
                       placeholder="#3b82f6"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_company_phone">Telefone</Label>
+                  <Label htmlFor="edit_company_phone" className="text-xs sm:text-sm">Telefone</Label>
                   <Input
                     id="edit_company_phone"
                     value={editingCompany.phone || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })}
                     placeholder="(00) 0000-0000"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_whatsapp">WhatsApp</Label>
+                  <Label htmlFor="edit_company_whatsapp" className="text-xs sm:text-sm">WhatsApp</Label>
                   <Input
                     id="edit_company_whatsapp"
                     value={editingCompany.whatsapp || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, whatsapp: e.target.value })}
                     placeholder="(00) 00000-0000"
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_company_facebook">Facebook</Label>
+                  <Label htmlFor="edit_company_facebook" className="text-xs sm:text-sm">Facebook</Label>
                   <Input
                     id="edit_company_facebook"
                     value={editingCompany.facebook || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, facebook: e.target.value })}
                     placeholder="URL do Facebook"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_instagram">Instagram</Label>
+                  <Label htmlFor="edit_company_instagram" className="text-xs sm:text-sm">Instagram</Label>
                   <Input
                     id="edit_company_instagram"
                     value={editingCompany.instagram || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, instagram: e.target.value })}
                     placeholder="@usuario"
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="edit_company_cep">CEP</Label>
+                <Label htmlFor="edit_company_cep" className="text-xs sm:text-sm">CEP</Label>
                 <Input
                   id="edit_company_cep"
                   value={editingCompany.cep || ''}
                   onChange={(e) => handleEditCepChange(e.target.value)}
                   placeholder="00000-000"
+                  className="text-sm sm:text-base"
                 />
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="edit_company_street">Rua</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="col-span-1 sm:col-span-2">
+                  <Label htmlFor="edit_company_street" className="text-xs sm:text-sm">Rua</Label>
                   <Input
                     id="edit_company_street"
                     value={editingCompany.street || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, street: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_number">Número</Label>
+                  <Label htmlFor="edit_company_number" className="text-xs sm:text-sm">Número</Label>
                   <Input
                     id="edit_company_number"
                     value={editingCompany.number || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, number: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="edit_company_complement">Complemento</Label>
+                <Label htmlFor="edit_company_complement" className="text-xs sm:text-sm">Complemento</Label>
                 <Input
                   id="edit_company_complement"
                   value={editingCompany.complement || ''}
                   onChange={(e) => setEditingCompany({ ...editingCompany, complement: e.target.value })}
+                  className="text-sm sm:text-base"
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_company_neighborhood">Bairro</Label>
+                  <Label htmlFor="edit_company_neighborhood" className="text-xs sm:text-sm">Bairro</Label>
                   <Input
                     id="edit_company_neighborhood"
                     value={editingCompany.neighborhood || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, neighborhood: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_company_city">Cidade</Label>
+                  <Label htmlFor="edit_company_city" className="text-xs sm:text-sm">Cidade</Label>
                   <Input
                     id="edit_company_city"
                     value={editingCompany.city || ''}
                     onChange={(e) => setEditingCompany({ ...editingCompany, city: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="edit_company_state">Estado</Label>
+                <Label htmlFor="edit_company_state" className="text-xs sm:text-sm">Estado</Label>
                 <Input
                   id="edit_company_state"
                   value={editingCompany.state || ''}
                   onChange={(e) => setEditingCompany({ ...editingCompany, state: e.target.value })}
                   placeholder="UF"
                   maxLength={2}
+                  className="text-sm sm:text-base"
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -1092,11 +1134,13 @@ export default function CompanyManagement() {
 
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4 sm:pt-6 border-t sm:border-t-0">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               Cancelar
             </Button>
-            <Button onClick={handleUpdateCompany}>Salvar Alterações</Button>
+            <Button onClick={handleUpdateCompany} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              Salvar Alterações
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

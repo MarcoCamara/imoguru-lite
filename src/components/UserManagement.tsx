@@ -640,17 +640,17 @@ export default function UserManagement() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
           <div>
-            <CardTitle>Usuários</CardTitle>
-            <CardDescription>Gerencie os usuários do sistema</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Usuários</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Gerencie os usuários do sistema</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <Select
               value={filterArchived}
               onValueChange={(value: 'all' | 'active' | 'archived') => setFilterArchived(value)}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm">
                 <SelectValue placeholder="Filtrar Usuários" />
               </SelectTrigger>
               <SelectContent>
@@ -661,63 +661,67 @@ export default function UserManagement() {
             </Select>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Novo Usuário
+              <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                <UserPlus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Novo Usuário</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Criar Novo Usuário</DialogTitle>
-                <DialogDescription>
+            <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl max-w-full max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+              <DialogHeader className="pb-2 sm:pb-4">
+                <DialogTitle className="text-base sm:text-lg md:text-xl">Criar Novo Usuário</DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm">
                   Adicione um novo usuário ao sistema
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="user_email">E-mail *</Label>
+                    <Label htmlFor="user_email" className="text-xs sm:text-sm">E-mail *</Label>
                     <Input
                       id="user_email"
                       type="email"
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                       placeholder="usuario@exemplo.com"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="user_password">Senha *</Label>
+                    <Label htmlFor="user_password" className="text-xs sm:text-sm">Senha *</Label>
                     <Input
                       id="user_password"
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                       placeholder="senha123"
+                      className="text-sm sm:text-base"
                     />
                     <p className="text-xs text-muted-foreground mt-1">Senha padrão: senha123 (pode ser alterada aqui se necessário)</p>
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="user_name">Nome Completo *</Label>
+                  <Label htmlFor="user_name" className="text-xs sm:text-sm">Nome Completo *</Label>
                   <Input
                     id="user_name"
                     value={newUser.fullName}
                     onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
                     placeholder="Nome do usuário"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="user_company">Empresa (Opcional)</Label>
+                  <Label htmlFor="user_company" className="text-xs sm:text-sm">Empresa (Opcional)</Label>
                   <Select
                     value={newUser.companyId}
                     onValueChange={(value) => setNewUser({ ...newUser, companyId: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm sm:text-base">
                       <SelectValue placeholder="Selecione uma empresa (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
                       {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
+                        <SelectItem key={company.id} value={company.id} className="text-xs sm:text-sm">
                           {company.name}
                         </SelectItem>
                       ))}
@@ -725,119 +729,131 @@ export default function UserManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="user_role">Nível de Acesso</Label>
+                  <Label htmlFor="user_role" className="text-xs sm:text-sm">Nível de Acesso</Label>
                   <Select
                     value={newUser.role}
                     onValueChange={(value) => setNewUser({ ...newUser, role: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm sm:text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">Usuário</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="user" className="text-xs sm:text-sm">Usuário</SelectItem>
+                      <SelectItem value="admin" className="text-xs sm:text-sm">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="user_phone">Telefone</Label>
+                    <Label htmlFor="user_phone" className="text-xs sm:text-sm">Telefone</Label>
                     <Input
                       id="user_phone"
                       value={newUser.phone}
                       onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
                       placeholder="(00) 00000-0000"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="user_creci">CRECI</Label>
+                    <Label htmlFor="user_creci" className="text-xs sm:text-sm">CRECI</Label>
                     <Input
                       id="user_creci"
                       value={newUser.creci}
                       onChange={(e) => setNewUser({ ...newUser, creci: e.target.value })}
                       placeholder="Número do CRECI"
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="user_cpf">CPF</Label>
+                    <Label htmlFor="user_cpf" className="text-xs sm:text-sm">CPF</Label>
                     <Input
                       id="user_cpf"
                       value={newUser.cpf_cnpj}
                       onChange={(e) => setNewUser({ ...newUser, cpf_cnpj: formatCPF(e.target.value) })}
                       placeholder="000.000.000-00"
                       maxLength={14}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="user_cep">CEP</Label>
+                  <Label htmlFor="user_cep" className="text-xs sm:text-sm">CEP</Label>
                   <Input
                     id="user_cep"
                     value={newUser.cep}
                     onChange={(e) => handleCepChange(e.target.value)}
                     placeholder="00000-000"
+                    className="text-sm sm:text-base"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="user_street">Rua</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="col-span-1 sm:col-span-2">
+                    <Label htmlFor="user_street" className="text-xs sm:text-sm">Rua</Label>
                     <Input
                       id="user_street"
                       value={newUser.street}
                       onChange={(e) => setNewUser({ ...newUser, street: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="user_number">Número</Label>
+                    <Label htmlFor="user_number" className="text-xs sm:text-sm">Número</Label>
                     <Input
                       id="user_number"
                       value={newUser.number}
                       onChange={(e) => setNewUser({ ...newUser, number: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="user_complement">Complemento</Label>
+                  <Label htmlFor="user_complement" className="text-xs sm:text-sm">Complemento</Label>
                   <Input
                     id="user_complement"
                     value={newUser.complement}
                     onChange={(e) => setNewUser({ ...newUser, complement: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="user_neighborhood">Bairro</Label>
+                    <Label htmlFor="user_neighborhood" className="text-xs sm:text-sm">Bairro</Label>
                     <Input
                       id="user_neighborhood"
                       value={newUser.neighborhood}
                       onChange={(e) => setNewUser({ ...newUser, neighborhood: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="user_city">Cidade</Label>
+                    <Label htmlFor="user_city" className="text-xs sm:text-sm">Cidade</Label>
                     <Input
                       id="user_city"
                       value={newUser.city}
                       onChange={(e) => setNewUser({ ...newUser, city: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="user_state">Estado</Label>
+                  <Label htmlFor="user_state" className="text-xs sm:text-sm">Estado</Label>
                   <Input
                     id="user_state"
                     value={newUser.state}
                     onChange={(e) => setNewUser({ ...newUser, state: e.target.value })}
                     placeholder="UF"
                     maxLength={2}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4 sm:pt-6 border-t sm:border-t-0">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
                   Cancelar
                 </Button>
-                <Button onClick={handleCreateUser}>Criar Usuário</Button>
+                <Button onClick={handleCreateUser} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                  Criar Usuário
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -885,59 +901,59 @@ export default function UserManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                  <div className="w-full sm:w-auto mb-2 sm:mb-0">
+                  <div className="w-full sm:w-auto">
                     <Select
                       value={userRoles[user.id] || 'user'}
                       onValueChange={(value) => handleUpdateRole(user.id, value)}
                     >
-                      <SelectTrigger className="w-full sm:w-[140px]">
+                      <SelectTrigger className="w-full sm:w-[140px] text-xs sm:text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">Usuário</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
+                        <SelectItem value="user" className="text-xs sm:text-sm">Usuário</SelectItem>
+                        <SelectItem value="admin" className="text-xs sm:text-sm">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => handleEditUser(user)}
                       title="Editar usuário"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => handleResetPassword(user.email)}
                       title="Resetar senha"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9"
                     >
-                      <KeyRound className="h-4 w-4" />
+                      <KeyRound className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => handleDuplicateUser(user)}
                       title="Duplicar usuário"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => handleArchiveUser(user.id)}
                       title={user.archived ? 'Desarquivar usuário' : 'Arquivar usuário'}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9"
                     >
                       {user.archived ? (
-                        <ArchiveRestore className="h-4 w-4" />
+                        <ArchiveRestore className="h-3 w-3 sm:h-4 sm:w-4" />
                       ) : (
-                        <Archive className="h-4 w-4" />
+                        <Archive className="h-3 w-3 sm:h-4 sm:w-4" />
                       )}
                     </Button>
                     <Button
@@ -945,18 +961,18 @@ export default function UserManagement() {
                       size="icon"
                       onClick={() => handleViewUserProperties(user)}
                       title="Visualizar imóveis"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9"
                     >
-                      <Home className="h-4 w-4" />
+                      <Home className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="destructive"
                       size="icon"
                       onClick={() => handleDeleteUser(user.id)}
                       title="Deletar usuário"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
@@ -968,46 +984,48 @@ export default function UserManagement() {
 
       {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl max-w-full max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="text-base sm:text-lg md:text-xl">Editar Usuário</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Atualize os dados do usuário
             </DialogDescription>
           </DialogHeader>
           {editingUser && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
               <div>
-                <Label htmlFor="edit_email">E-mail *</Label>
+                <Label htmlFor="edit_email" className="text-xs sm:text-sm">E-mail *</Label>
                 <Input
                   id="edit_email"
                   type="email"
                   value={editingUser.email}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="text-sm sm:text-base"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Apenas administradores podem alterar o e-mail</p>
               </div>
               <div>
-                <Label htmlFor="edit_name">Nome Completo *</Label>
+                <Label htmlFor="edit_name" className="text-xs sm:text-sm">Nome Completo *</Label>
                 <Input
                   id="edit_name"
                   value={editingUser.full_name || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
                   placeholder="Nome do usuário"
+                  className="text-sm sm:text-base"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_company">Empresa (Opcional)</Label>
+                <Label htmlFor="edit_company" className="text-xs sm:text-sm">Empresa (Opcional)</Label>
                 <Select
                   value={editingUser.company_id || undefined}
                   onValueChange={(value) => setEditingUser({ ...editingUser, company_id: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm sm:text-base">
                     <SelectValue placeholder="Selecione uma empresa (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id}>
+                      <SelectItem key={company.id} value={company.id} className="text-xs sm:text-sm">
                         {company.name}
                       </SelectItem>
                     ))}
@@ -1015,130 +1033,142 @@ export default function UserManagement() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit_role">Nível de Acesso</Label>
+                <Label htmlFor="edit_role" className="text-xs sm:text-sm">Nível de Acesso</Label>
                 <Select
                   value={userRoles[editingUser.id] || 'user'}
                   onValueChange={(value) => handleUpdateRole(editingUser.id, value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm sm:text-base">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Usuário</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="user" className="text-xs sm:text-sm">Usuário</SelectItem>
+                    <SelectItem value="admin" className="text-xs sm:text-sm">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_phone">Telefone</Label>
+                  <Label htmlFor="edit_phone" className="text-xs sm:text-sm">Telefone</Label>
                   <Input
                     id="edit_phone"
                     value={editingUser.phone || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
                     placeholder="(00) 00000-0000"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_creci">CRECI</Label>
+                  <Label htmlFor="edit_creci" className="text-xs sm:text-sm">CRECI</Label>
                   <Input
                     id="edit_creci"
                     value={editingUser.creci || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, creci: e.target.value })}
                     placeholder="Número do CRECI"
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_cpf">CPF</Label>
+                  <Label htmlFor="edit_cpf" className="text-xs sm:text-sm">CPF</Label>
                   <Input
                     id="edit_cpf"
                     value={editingUser.cpf_cnpj || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, cpf_cnpj: formatCPF(e.target.value) })}
                     placeholder="000.000.000-00"
                     maxLength={14}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               <div>
-                <Label htmlFor="edit_cep">CEP</Label>
+                <Label htmlFor="edit_cep" className="text-xs sm:text-sm">CEP</Label>
                 <Input
                   id="edit_cep"
                   value={editingUser.cep || ''}
                   onChange={(e) => handleEditCepChange(e.target.value)}
                   placeholder="00000-000"
+                  className="text-sm sm:text-base"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="edit_street">Rua</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="col-span-1 sm:col-span-2">
+                  <Label htmlFor="edit_street" className="text-xs sm:text-sm">Rua</Label>
                   <Input
                     id="edit_street"
                     value={editingUser.street || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, street: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_number">Número</Label>
+                  <Label htmlFor="edit_number" className="text-xs sm:text-sm">Número</Label>
                   <Input
                     id="edit_number"
                     value={editingUser.number || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, number: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               <div>
-                <Label htmlFor="edit_complement">Complemento</Label>
+                <Label htmlFor="edit_complement" className="text-xs sm:text-sm">Complemento</Label>
                 <Input
                   id="edit_complement"
                   value={editingUser.complement || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, complement: e.target.value })}
+                  className="text-sm sm:text-base"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_neighborhood">Bairro</Label>
+                  <Label htmlFor="edit_neighborhood" className="text-xs sm:text-sm">Bairro</Label>
                   <Input
                     id="edit_neighborhood"
                     value={editingUser.neighborhood || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, neighborhood: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_city">Cidade</Label>
+                  <Label htmlFor="edit_city" className="text-xs sm:text-sm">Cidade</Label>
                   <Input
                     id="edit_city"
                     value={editingUser.city || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, city: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 </div>
               </div>
               <div>
-                <Label htmlFor="edit_state">Estado</Label>
+                <Label htmlFor="edit_state" className="text-xs sm:text-sm">Estado</Label>
                 <Input
                   id="edit_state"
                   value={editingUser.state || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, state: e.target.value })}
                   placeholder="UF"
                   maxLength={2}
+                  className="text-sm sm:text-base"
                 />
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4 sm:pt-6 border-t sm:border-t-0">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               Cancelar
             </Button>
-            <Button onClick={handleUpdateUser}>Salvar Alterações</Button>
+            <Button onClick={handleUpdateUser} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              Salvar Alterações
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog para Visualizar Imóveis do Usuário */}
       <Dialog open={isUserPropertiesDialogOpen} onOpenChange={setIsUserPropertiesDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Imóveis de {selectedUserForProperties?.name}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-5xl max-w-full max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="text-base sm:text-lg md:text-xl">Imóveis de {selectedUserForProperties?.name}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Lista de imóveis associados a este usuário.
             </DialogDescription>
           </DialogHeader>
@@ -1161,33 +1191,33 @@ export default function UserManagement() {
                   Total de {userProperties.length} {userProperties.length === 1 ? 'imóvel' : 'imóveis'}
                 </p>
               </div>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
+              <div className="border rounded-lg overflow-x-auto overflow-y-hidden">
+                <table className="w-full min-w-[600px]">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Código</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Título</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Tipo</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Finalidade</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Cidade</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Preço</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Status</th>
-                      <th className="px-4 py-2 text-center text-sm font-medium">Ações</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium">Código</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium">Título</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium hidden sm:table-cell">Tipo</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium">Finalidade</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium hidden md:table-cell">Cidade</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium hidden lg:table-cell">Preço</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-medium">Status</th>
+                      <th className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm font-medium">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {userProperties.map((property) => (
                       <tr key={property.id} className="border-t hover:bg-muted/50">
-                        <td className="px-4 py-3 text-sm">{property.code}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{property.title}</td>
-                        <td className="px-4 py-3 text-sm">{property.property_type || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <Badge variant={property.purpose === 'venda' ? 'default' : property.purpose === 'venda_locacao' ? 'outline' : 'secondary'}>
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm">{property.code}</td>
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium break-words max-w-[150px] sm:max-w-none">{property.title}</td>
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm hidden sm:table-cell">{property.property_type || 'N/A'}</td>
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm">
+                          <Badge variant={property.purpose === 'venda' ? 'default' : property.purpose === 'venda_locacao' ? 'outline' : 'secondary'} className="text-xs">
                             {property.purpose === 'venda' ? 'Venda' : property.purpose === 'locacao' ? 'Locação' : 'Venda/Locação'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-sm">{property.city || 'N/A'}, {property.state || ''}</td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm hidden md:table-cell break-words">{property.city || 'N/A'}, {property.state || ''}</td>
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm hidden lg:table-cell">
                           {property.purpose === 'venda' || property.purpose === 'venda_locacao'
                             ? (property.sale_price 
                                 ? new Intl.NumberFormat('pt-BR', { 
@@ -1202,11 +1232,11 @@ export default function UserManagement() {
                                   }).format(property.rental_price)
                                 : 'N/A')}
                         </td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm">
                           {property.archived ? (
-                            <Badge variant="outline" className="bg-muted">Arquivado</Badge>
+                            <Badge variant="outline" className="bg-muted text-xs">Arquivado</Badge>
                           ) : (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
                               {property.status === 'disponivel' ? 'Disponível' : 
                                property.status === 'reservado' ? 'Reservado' : 
                                property.status === 'vendido' ? 'Vendido' : 
@@ -1214,7 +1244,7 @@ export default function UserManagement() {
                             </Badge>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-2 sm:px-4 py-3 text-center">
                           <Button
                             variant="outline"
                             size="sm"
@@ -1222,8 +1252,10 @@ export default function UserManagement() {
                               setIsUserPropertiesDialogOpen(false);
                               navigate(`/property/${property.id}`);
                             }}
+                            className="text-xs sm:text-sm px-2 sm:px-3"
                           >
-                            Ver Detalhes
+                            <span className="hidden sm:inline">Ver Detalhes</span>
+                            <span className="sm:hidden">Ver</span>
                           </Button>
                         </td>
                       </tr>
@@ -1233,8 +1265,8 @@ export default function UserManagement() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUserPropertiesDialogOpen(false)}>
+          <DialogFooter className="pt-4 sm:pt-6 border-t sm:border-t-0">
+            <Button variant="outline" onClick={() => setIsUserPropertiesDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               Fechar
             </Button>
           </DialogFooter>

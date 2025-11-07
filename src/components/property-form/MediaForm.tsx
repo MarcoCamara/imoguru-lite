@@ -32,6 +32,9 @@ export default function MediaForm({
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [youtubeUrlError, setYoutubeUrlError] = useState<string | null>(null);
+  const [videoLink, setVideoLink] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [addingVideoLink, setAddingVideoLink] = useState(false);
 
   useEffect(() => {
     if (propertyId) {
@@ -235,8 +238,10 @@ export default function MediaForm({
 
   const deleteVideo = async (videoId: string, url: string) => {
     try {
-      const path = url.split('/property-videos/')[1];
-      await supabase.storage.from('property-videos').remove([path]);
+      const path = url?.includes('/property-videos/') ? url.split('/property-videos/')[1] : null;
+      if (path) {
+        await supabase.storage.from('property-videos').remove([path]);
+      }
       await supabase.from('property_videos').delete().eq('id', videoId);
 
       toast({
@@ -261,11 +266,96 @@ export default function MediaForm({
     setPendingVideos(pendingVideos.filter((_, i) => i !== index));
   };
 
-  // Basic YouTube URL validation
+  const handleAddVideoLink = async () => {
+    if (!propertyId) {
+      toast({
+        title: 'Salve o imóvel primeiro',
+        description: 'É necessário salvar o imóvel antes de adicionar vídeos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!videoLink.trim()) {
+      toast({
+        title: 'Informe o link do vídeo',
+        description: 'Cole o endereço do vídeo que deseja adicionar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setAddingVideoLink(true);
+      const { error } = await supabase.from('property_videos').insert({
+        property_id: propertyId,
+        url: videoLink.trim(),
+        title: videoTitle?.trim() || 'Vídeo do Imóvel',
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Vídeo adicionado!',
+      });
+
+      setVideoLink('');
+      setVideoTitle('');
+      loadMedia();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao adicionar vídeo',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setAddingVideoLink(false);
+    }
+  };
+
+  // YouTube URL validation supporting watch, share, embed and shorts formats
   const isValidYouTubeUrl = (url: string): boolean => {
-    if (!url) return true; // Allow empty string
-    const regex = /^(https?\:\/\/(?:www\.)?youtube\.com\/watch\?v=|https?\:\/\/(?:www\.)?youtu\.be\/)([a-zA-Z0-9_-]{11})$/;
-    return regex.test(url);
+    if (!url) return true; // Allow empty field
+
+    try {
+      const parsed = new URL(url.trim());
+      const hostname = parsed.hostname.replace(/^www\./, '').toLowerCase();
+
+      const extractIdFromPath = (path: string) => {
+        const segments = path.split('/').filter(Boolean);
+        return segments[1] || segments[0] || '';
+      };
+
+      const isStandardYouTube = ['youtube.com', 'm.youtube.com', 'music.youtube.com'].includes(hostname);
+      const isNoCookie = hostname === 'youtube-nocookie.com';
+
+      if (isStandardYouTube || isNoCookie) {
+        if (parsed.pathname.startsWith('/watch')) {
+          const videoId = parsed.searchParams.get('v');
+          return !!videoId && videoId.length >= 11;
+        }
+
+        if (
+          parsed.pathname.startsWith('/embed/') ||
+          parsed.pathname.startsWith('/shorts/') ||
+          parsed.pathname.startsWith('/live/')
+        ) {
+          const videoId = extractIdFromPath(parsed.pathname);
+          return !!videoId && videoId.length >= 11;
+        }
+
+        return false;
+      }
+
+      if (hostname === 'youtu.be') {
+        const videoId = extractIdFromPath(parsed.pathname);
+        return !!videoId && videoId.length >= 11;
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
   };
 
   const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -485,6 +575,34 @@ export default function MediaForm({
             Nenhum vídeo enviado ainda.
           </p>
         )}
+
+        <div className="space-y-4 mt-6">
+          <h3 className="text-base font-semibold">Adicionar vídeo por link</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2">
+              <Label htmlFor="video-link">Link do Vídeo (YouTube, Vimeo, etc)</Label>
+              <Input
+                id="video-link"
+                value={videoLink}
+                onChange={(e) => setVideoLink(e.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="video-title">Título (opcional)</Label>
+              <Input
+                id="video-title"
+                value={videoTitle}
+                onChange={(e) => setVideoTitle(e.target.value)}
+                placeholder="Descrição do vídeo"
+              />
+            </div>
+          </div>
+          <Button onClick={handleAddVideoLink} disabled={addingVideoLink || !videoLink.trim()}>
+            <Upload className="h-4 w-4 mr-2" />
+            {addingVideoLink ? 'Adicionando...' : 'Adicionar Vídeo'}
+          </Button>
+        </div>
       </div>
 
       <div>
