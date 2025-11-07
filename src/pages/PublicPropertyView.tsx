@@ -715,6 +715,19 @@ export default function PublicPropertyView() {
 
       </main>
 
+      {company.whatsapp && (
+        <a
+          href={`https://wa.me/${company.whatsapp.replace(/\D/g, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-green-500 px-4 py-3 text-white shadow-lg transition-transform hover:-translate-y-1 hover:bg-green-600"
+          aria-label="Contato via WhatsApp"
+        >
+          <MessageCircle className="h-5 w-5" />
+          <span className="hidden sm:inline text-sm font-semibold">WhatsApp</span>
+        </a>
+      )}
+
       <PublicFooter
         companyName={company.name}
         companyPhone={company.phone || undefined}

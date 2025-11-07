@@ -351,7 +351,7 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
       for (const prop of properties) {
         // Para email, gerar HTML. Para outras plataformas, gerar texto simples
         const forceHtml = platformToShare === 'email';
-        const message = await formatMessageWithTemplate(template, prop, forceHtml);
+        let message = await formatMessageWithTemplate(template, prop, forceHtml);
         const images = getPropertyImages(prop, template.max_images);
 
         let result: any = false;
@@ -359,7 +359,36 @@ export default function ShareDialog({ open, onOpenChange, properties }: ShareDia
         switch (platformToShare) {
           case 'whatsapp':
             console.log(`📱 Compartilhando em WhatsApp`);
-            result = await shareToWhatsApp(message, images);
+            {
+              let propertyUrlMatch = message.match(/https?:\/\/[\S]+/);
+              let messageWithLink = message;
+
+              if (!propertyUrlMatch) {
+                try {
+                  const { data: company } = await supabase
+                    .from('companies')
+                    .select('slug')
+                    .eq('id', prop.company_id)
+                    .single();
+
+                  const fallbackUrl = `${window.location.origin}/public-property/${company?.slug || 'company'}/property/${prop.id}`;
+                  messageWithLink = `${messageWithLink.trim()}
+
+${fallbackUrl}`;
+                } catch (urlError) {
+                  console.warn('Não foi possível recuperar o slug da empresa para o WhatsApp:', urlError);
+                }
+              } else {
+                const propertyUrl = propertyUrlMatch[0];
+                if (!message.trim().endsWith(propertyUrl)) {
+                  messageWithLink = `${message.trim()}
+
+${propertyUrl}`;
+                }
+              }
+
+              result = await shareToWhatsApp(messageWithLink, images);
+            }
             break;
           case 'email':
             console.log(`📧 Compartilhando em Email`);

@@ -545,7 +545,7 @@ export const usePrint = () => {
         loadSystemSettings(),
       ]);
 
-      const useCompactLayout = data.layout === 'compact' && data.properties.length === 1;
+      const useCompactLayout = data.layout === 'compact';
 
       if (!useCompactLayout && (!template || !template.content)) {
         toast({

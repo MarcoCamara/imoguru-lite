@@ -594,7 +594,12 @@ export default function Dashboard() {
                     size="icon"
                     onClick={() => {
                       const propertiesToPrint = properties.filter(p => selectedProperties.includes(p.id));
-                      printProperties({ properties: propertiesToPrint, showFullAddress: true });
+                      printProperties({
+                        properties: propertiesToPrint,
+                        company: userCompany || undefined,
+                        showFullAddress: true,
+                        layout: 'compact',
+                      });
                     }}
                     className="w-20 h-9 flex items-center justify-center"
                     title="Imprimir imóveis selecionados"

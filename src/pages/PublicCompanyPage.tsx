@@ -225,7 +225,7 @@ export default function PublicCompanyPage() {
       properties: propertiesToPrint,
       company,
       showFullAddress: false,
-      layout: propertiesToPrint.length === 1 ? 'compact' : undefined,
+      layout: 'compact',
     });
   };
 
